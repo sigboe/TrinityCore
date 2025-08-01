@@ -3821,11 +3821,11 @@ void World::RemoveOldCorpses()
     m_timers[WUPDATE_CORPSES].SetCurrent(m_timers[WUPDATE_CORPSES].GetInterval());
 }
 
-void World::AddLoginCallback(WorldSession* session, std::shared_ptr<LoginQueryHolder const> callback)
+void World::AddLoginCallback(WorldSession* session, LoginQueryHolder const& callback)
 {
     LoginCallbackData data;
     data.session = session;
-    data.queryHolder = callback;
+    data.queryHolder = std::make_shared<LoginQueryHolder const>(callback);
     m_LoginCallbacks.push(data);
 }
 
