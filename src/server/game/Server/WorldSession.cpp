@@ -172,6 +172,10 @@ WorldSession::WorldSession(uint32 id, std::string&& name, std::shared_ptr<WorldS
 /// WorldSession destructor
 WorldSession::~WorldSession()
 {
+    // If session is destroyed while loading, decrement the counter
+    if (m_playerLoading)
+        sWorld->DecrementLoadingSessionCount();
+        
     ///- unload player if not unloaded
     if (_player)
         LogoutPlayer (true);

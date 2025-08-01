@@ -655,7 +655,9 @@ class TC_GAME_API World
         uint32 GetActiveAndQueuedSessionCount() const { return m_sessions.size(); }
         uint32 GetActiveSessionCount() const { return m_sessions.size() - m_QueuedPlayer.size(); }
         uint32 GetQueuedSessionCount() const { return m_QueuedPlayer.size(); }
-        uint32 GetLoadingSessionCount() const;
+        uint32 GetLoadingSessionCount() const { return m_loadingSessionCount.load(); }
+        void IncrementLoadingSessionCount() { ++m_loadingSessionCount; }
+        void DecrementLoadingSessionCount() { --m_loadingSessionCount; }
         /// Get the maximum number of parallel sessions on the server since last reboot
         uint32 GetMaxQueuedSessionCount() const { return m_maxQueuedSessionCount; }
         uint32 GetMaxActiveSessionCount() const { return m_maxActiveSessionCount; }
@@ -939,6 +941,9 @@ class TC_GAME_API World
 
         //Player Queue
         Queue m_QueuedPlayer;
+        
+        // counter for sessions currently loading (awaiting login query)
+        std::atomic<uint32> m_loadingSessionCount{0};
 
         // sessions that are added async
         void AddSession_(WorldSession* s);

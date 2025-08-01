@@ -445,16 +445,6 @@ void World::AddQueuedPlayer(WorldSession* sess)
     sess->SendAuthResponse(AUTH_WAIT_QUEUE, false, GetQueuePos(sess));
 }
 
-uint32 World::GetLoadingSessionCount() const
-{
-    uint32 count = 0;
-    for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
-    {
-        if (itr->second && itr->second->PlayerLoading())
-            ++count;
-    }
-    return count;
-}
 
 bool World::RemoveQueuedPlayer(WorldSession* sess)
 {
@@ -487,7 +477,10 @@ bool World::RemoveQueuedPlayer(WorldSession* sess)
         --sessions;
 
     // accept first in queue
-    if ((!m_playerLimit || sessions < m_playerLimit) && !m_QueuedPlayer.empty())
+    uint32 loadingSessions = GetLoadingSessionCount();
+    constexpr uint32 MAX_LOADING_SESSIONS = 100;
+    
+    if ((!m_playerLimit || sessions < m_playerLimit) && loadingSessions < MAX_LOADING_SESSIONS && !m_QueuedPlayer.empty())
     {
         WorldSession* pop_sess = m_QueuedPlayer.front();
         pop_sess->InitializeSession();
