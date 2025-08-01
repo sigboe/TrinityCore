@@ -386,8 +386,6 @@ void World::AddSession_(WorldSession* s)
         {
             TC_LOG_INFO("misc", "PlayerQueue: Account id {} queued due to too many loading sessions ({}/{}). Queue Position ({}).", 
                        s->GetAccountId(), loadingSessions, MAX_LOADING_SESSIONS, ++QueueSize);
-            TC_LOG_WARN("perf", "QUEUE_DUE_TO_LOADING - Sessions: {}, Loading: {}, Queued: {}, Account: {}", 
-                       Sessions, loadingSessions, QueueSize, s->GetAccountId());
         }
         else
         {
