@@ -471,7 +471,16 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater, std::map<uint32, u
         }
     }
 
+    // Monitor query callback processing
+    auto callback_start_time = std::chrono::high_resolution_clock::now();
     ProcessQueryCallbacks();
+    auto callback_end_time = std::chrono::high_resolution_clock::now();
+    auto callback_duration = std::chrono::duration_cast<std::chrono::microseconds>(callback_end_time - callback_start_time);
+    
+    if (callback_duration.count() > 5000) { // Log if ProcessQueryCallbacks takes >5ms
+        TC_LOG_WARN("perf", "SLOW_QUERY_CALLBACKS - Duration: {}μs, Account: {}, Loading: {}", 
+                   callback_duration.count(), GetAccountId(), m_playerLoading);
+    }
 
     //check if we are safe to proceed with logout
     //logout procedure should happen only in World::UpdateSessions() method!!!

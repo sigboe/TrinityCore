@@ -776,15 +776,37 @@ void WorldSession::HandlePlayerLoginOpcode(WorldPacket& recvData)
         return;
     }
 
-    AddQueryHolderCallback(CharacterDatabase.DelayQueryHolder(holder)).AfterComplete([this](SQLQueryHolderBase const& holder)
+    auto query_start_time = std::chrono::high_resolution_clock::now();
+    AddQueryHolderCallback(CharacterDatabase.DelayQueryHolder(holder)).AfterComplete([this, query_start_time](SQLQueryHolderBase const& holder)
     {
+        auto query_end_time = std::chrono::high_resolution_clock::now();
+        auto query_duration = std::chrono::duration_cast<std::chrono::milliseconds>(query_end_time - query_start_time);
+        
+        if (query_duration.count() > 100) { // Log queries taking >100ms
+            TC_LOG_WARN("perf", "SLOW_LOGIN_QUERY - Duration: {}ms, Account: {}", 
+                       query_duration.count(), GetAccountId());
+        }
+        
+        static std::atomic<int> active_login_queries{0};
+        static std::atomic<int> total_login_queries{0};
+        ++active_login_queries;
+        ++total_login_queries;
+        
+        // Log high concurrency
+        if (active_login_queries.load() > 10) {
+            TC_LOG_WARN("perf", "HIGH_LOGIN_CONCURRENCY - Active: {}, Total: {}", 
+                       active_login_queries.load(), total_login_queries.load());
+        }
+        
         HandlePlayerLogin(static_cast<LoginQueryHolder const&>(holder));
+        --active_login_queries;
     });
 }
 
 void WorldSession::HandlePlayerLogin(LoginQueryHolder const& holder)
 {
     ZoneScopedNC("WorldSession::HandlePlayerLogin", WORLD_UPDATE_COLOR)
+    auto login_start_time = std::chrono::high_resolution_clock::now();
 
     ObjectGuid playerGuid = holder.GetGuid();
 
@@ -1114,6 +1136,22 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder const& holder)
     sScriptMgr->OnPlayerLogin(pCurrChar, firstLogin);
 
     TC_METRIC_EVENT("player_events", "Login", pCurrChar->GetName());
+    
+    // Log HandlePlayerLogin performance
+    auto login_end_time = std::chrono::high_resolution_clock::now();
+    auto login_duration = std::chrono::duration_cast<std::chrono::milliseconds>(login_end_time - login_start_time);
+    
+    if (login_duration.count() > 500) { // Log logins taking >500ms
+        TC_LOG_WARN("perf", "SLOW_PLAYER_LOGIN - Duration: {}ms, Account: {}, Character: {}", 
+                   login_duration.count(), GetAccountId(), pCurrChar->GetName());
+    }
+    
+    static std::atomic<int> total_logins{0};
+    if (++total_logins % 100 == 0) { // Log every 100 logins
+        TC_LOG_INFO("perf", "LOGIN_STATS - Total: {}, Duration: {}ms, World Sessions: {}, Loading: {}", 
+                   total_logins.load(), login_duration.count(), sWorld->GetActiveAndQueuedSessionCount(), 
+                   sWorld->GetLoadingSessionCount());
+    }
 }
 
 void WorldSession::SendFeatureSystemStatus()

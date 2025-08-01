@@ -25,6 +25,11 @@
 
 #include <mutex>
 
+#ifdef _WIN32
+#include <windows.h>
+#include <psapi.h>
+#endif
+
 class MapUpdateRequest
 {
     private:
@@ -42,8 +47,32 @@ class MapUpdateRequest
 
         void call()
         {
+            auto map_start_time = std::chrono::high_resolution_clock::now();
             TC_METRIC_TIMER("map_update_time_diff", TC_METRIC_TAG("map_id", std::to_string(m_map.GetId())));
+            
+            // Thread performance monitoring
+            DWORD thread_id = GetCurrentThreadId();
+            int priority = GetThreadPriority(GetCurrentThread());
+            DWORD core = GetCurrentProcessorNumber();
+            
             m_map.Update (m_diff);
+            
+            auto map_end_time = std::chrono::high_resolution_clock::now();
+            auto map_duration = std::chrono::duration_cast<std::chrono::milliseconds>(map_end_time - map_start_time);
+            
+            // Log slow map updates
+            if (map_duration.count() > 100) { // >100ms
+                TC_LOG_WARN("perf", "SLOW_MAP_UPDATE - MapID: {}, Duration: {}ms, Diff: {}, ThreadID: {}, Priority: {}, Core: {}", 
+                           m_map.GetId(), map_duration.count(), m_diff, thread_id, priority, core);
+            }
+            
+            // Periodic map thread performance logging
+            static std::atomic<int> map_update_counter{0};
+            if (++map_update_counter % 1000 == 0) {
+                TC_LOG_INFO("perf", "MAP_THREAD_STATS - MapID: {}, Duration: {}ms, ThreadID: {}, Priority: {}, Core: {}, Updates: {}", 
+                           m_map.GetId(), map_duration.count(), thread_id, priority, core, map_update_counter.load());
+            }
+            
             m_updater.update_finished();
         }
 };
