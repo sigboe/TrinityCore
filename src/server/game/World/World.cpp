@@ -372,7 +372,7 @@ void World::AddSession_(WorldSession* s)
         --Sessions;
 
     uint32 loadingSessions = GetLoadingSessionCount();
-    constexpr uint32 MAX_LOADING_SESSIONS = 100;
+    constexpr uint32 MAX_LOADING_SESSIONS = 5;
     
     if (!pLimitNoQueue && ((pLimit > 0 && Sessions >= pLimit) || loadingSessions >= MAX_LOADING_SESSIONS) && !s->HasPermission(rbac::RBAC_PERM_SKIP_QUEUE) && !HasRecentlyDisconnected(s))
     {
