@@ -9592,6 +9592,7 @@ bool Unit::HandleAttackPowerModifier(AttackPowerModIndex index, AttackPowerModTy
     if (!CanModifyStats())
         return false;
     UpdateAttackPowerAndDamage(index == RANGED_AP_MODS);
+    return true;
 }
 
 float Unit::GetAttackPowerModifierValue(AttackPowerModIndex index, AttackPowerModType modifierType) const
