@@ -758,9 +758,9 @@ void WorldSession::HandlePlayerLoginOpcode(WorldPacket& recvData)
         return;
     }
 
-    AddQueryHolderCallback(CharacterDatabase.DelayQueryHolder(holder)).AfterComplete([this](SQLQueryHolderBase const& holder)
+    AddQueryHolderCallback(CharacterDatabase.DelayQueryHolder(holder)).AfterComplete([this, holder](SQLQueryHolderBase const& queryHolder)
     {
-        sWorld->AddLoginCallback(this, static_cast<LoginQueryHolder const&>(holder));
+        sWorld->AddLoginCallback(this, std::static_pointer_cast<LoginQueryHolder const>(holder));
     });
 }
 

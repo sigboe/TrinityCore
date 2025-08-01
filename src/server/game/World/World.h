@@ -33,6 +33,7 @@
 #include <atomic>
 #include <list>
 #include <map>
+#include <memory>
 #include <queue>
 #include <unordered_map>
 
@@ -40,6 +41,7 @@ class Player;
 class WorldPacket;
 class WorldSession;
 class WorldSocket;
+class LoginQueryHolder;
 struct Realm;
 
 // ServerMessages.dbc
@@ -656,7 +658,7 @@ class TC_GAME_API World
         uint32 GetActiveAndQueuedSessionCount() const { return m_sessions.size(); }
         uint32 GetActiveSessionCount() const { return m_sessions.size() - m_QueuedPlayer.size(); }
         uint32 GetQueuedSessionCount() const { return m_QueuedPlayer.size(); }
-        void AddLoginCallback(WorldSession* session, LoginQueryHolder const& callback);
+        void AddLoginCallback(WorldSession* session, std::shared_ptr<LoginQueryHolder const> callback);
         void ProcessLoginCallbacks();
         /// Get the maximum number of parallel sessions on the server since last reboot
         uint32 GetMaxQueuedSessionCount() const { return m_maxQueuedSessionCount; }

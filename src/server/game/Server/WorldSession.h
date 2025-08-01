@@ -28,6 +28,7 @@
 #include "Common.h"
 #include "DatabaseEnvFwd.h"
 #include "Duration.h"
+#include "QueryHolder.h"
 #include "LockedQueue.h"
 #include "ObjectGuid.h"
 #include "Packet.h"
