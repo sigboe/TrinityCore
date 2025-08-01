@@ -373,7 +373,7 @@ void World::AddSession_(WorldSession* s)
     uint32 loadingSessions = GetLoadingSessionCount();
     constexpr uint32 MAX_LOADING_SESSIONS = 5;
     
-    if (((pLimit > 0 && Sessions >= pLimit) || loadingSessions >= MAX_LOADING_SESSIONS) && !s->HasPermission(rbac::RBAC_PERM_SKIP_QUEUE) && !HasRecentlyDisconnected(s))
+    if (!pLimitNoQueue && ((pLimit > 0 && Sessions >= pLimit) || loadingSessions >= MAX_LOADING_SESSIONS) && !s->HasPermission(rbac::RBAC_PERM_SKIP_QUEUE) && !HasRecentlyDisconnected(s))
     {
         AddQueuedPlayer(s);
         UpdateMaxSessionCounters();
