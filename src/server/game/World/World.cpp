@@ -363,6 +363,7 @@ void World::AddSession_(WorldSession* s)
 
     uint32 Sessions = GetActiveAndQueuedSessionCount();
     uint32 pLimit = GetPlayerAmountLimit();
+    bool pLimitNoQueue = sWorld->GetPlayerAmountLimitNoQueue();
     uint32 QueueSize = GetQueuedSessionCount(); //number of players in the queue
 
     //so we don't count the user trying to
@@ -530,6 +531,7 @@ void World::LoadConfigSettings(bool reload)
 
     ///- Read the player limit and the Message of the day from the config file
     SetPlayerAmountLimit(sConfigMgr->GetIntDefault("PlayerLimit", 100));
+    SetPlayerAmountLimitNoQueue(sConfigMgr->GetBoolDefault("PlayerLimit.NoQueue", false));
     Motd::SetMotd(sConfigMgr->GetStringDefault("Motd", "Welcome to a Trinity Core Server."));
 
     ///- Read ticket system setting from the config file
