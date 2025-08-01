@@ -40,6 +40,7 @@ class Player;
 class WorldPacket;
 class WorldSession;
 class WorldSocket;
+class LoginQueryHolder;
 struct Realm;
 
 // ServerMessages.dbc
