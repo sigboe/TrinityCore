@@ -1435,6 +1435,8 @@ void Player::Update(uint32 p_time)
     // so we find a 'slot' based on the dynamic period where this particular
     // unit should perform its notify.
     uint32 period = GetMap()->GetVisibilityNotifyPeriod();
+    if (m_lastTickTime - m_lastNotifiedTime < period)
+        return;
     uint32 currentOffset = m_lastTickTime % period;
     uint32 lastOffset = (m_lastTickTime - p_time) % period;
     uint32 guidOffset = GetGUID().GetCounter() % period;

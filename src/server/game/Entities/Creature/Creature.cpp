@@ -1132,6 +1132,8 @@ void Creature::Update(uint32 diff)
     // so we find a 'slot' based on the dynamic period where this particular
     // unit should perform its notify.
     uint32 period = GetMap()->GetVisibilityNotifyPeriod();
+    if (m_lastTickTime - m_lastNotifiedTime < period)
+        return;
     uint32 currentOffset = m_lastTickTime % period;
     uint32 lastOffset = (m_lastTickTime - diff) % period;
     uint32 guidOffset = GetGUID().GetCounter() % period;
