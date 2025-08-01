@@ -371,11 +371,22 @@ void World::AddSession_(WorldSession* s)
     if (decrease_session)
         --Sessions;
 
-    if (!pLimitNoQueue && pLimit > 0 && Sessions >= pLimit && !s->HasPermission(rbac::RBAC_PERM_SKIP_QUEUE) && !HasRecentlyDisconnected(s))
+    uint32 loadingSessions = GetLoadingSessionCount();
+    constexpr uint32 MAX_LOADING_SESSIONS = 100;
+    
+    if (!pLimitNoQueue && ((pLimit > 0 && Sessions >= pLimit) || loadingSessions >= MAX_LOADING_SESSIONS) && !s->HasPermission(rbac::RBAC_PERM_SKIP_QUEUE) && !HasRecentlyDisconnected(s))
     {
         AddQueuedPlayer(s);
         UpdateMaxSessionCounters();
-        TC_LOG_INFO("misc", "PlayerQueue: Account id {} is in Queue Position ({}).", s->GetAccountId(), ++QueueSize);
+        if (loadingSessions >= MAX_LOADING_SESSIONS)
+        {
+            TC_LOG_INFO("misc", "PlayerQueue: Account id {} queued due to too many loading sessions ({}/{}). Queue Position ({}).", 
+                       s->GetAccountId(), loadingSessions, MAX_LOADING_SESSIONS, ++QueueSize);
+        }
+        else
+        {
+            TC_LOG_INFO("misc", "PlayerQueue: Account id {} is in Queue Position ({}).", s->GetAccountId(), ++QueueSize);
+        }
         return;
     }
 
@@ -433,6 +444,17 @@ void World::AddQueuedPlayer(WorldSession* sess)
 
     // The 1st SMSG_AUTH_RESPONSE needs to contain other info too.
     sess->SendAuthResponse(AUTH_WAIT_QUEUE, false, GetQueuePos(sess));
+}
+
+uint32 World::GetLoadingSessionCount() const
+{
+    uint32 count = 0;
+    for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
+    {
+        if (itr->second && itr->second->PlayerLoading())
+            ++count;
+    }
+    return count;
 }
 
 bool World::RemoveQueuedPlayer(WorldSession* sess)
