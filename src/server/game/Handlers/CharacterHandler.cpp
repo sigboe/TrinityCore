@@ -773,7 +773,7 @@ void WorldSession::HandlePlayerLoginOpcode(WorldPacket& recvData)
 
     AddQueryHolderCallback(CharacterDatabase.DelayQueryHolder(holder)).AfterComplete([this](SQLQueryHolderBase const& holder)
     {
-        HandlePlayerLogin(static_cast<LoginQueryHolder const&>(holder));
+        sWorld->AddLoginCallback(this, static_cast<LoginQueryHolder const&>(holder));
     });
 }
 
