@@ -101,11 +101,6 @@
 
 #include <boost/asio/ip/address.hpp>
 
-#ifdef _WIN32
-#include <windows.h>
-#include <psapi.h>
-#endif
-
 // @tswow-begin - avoid including from StatSystem.h
 void LoadAPFormulas();
 // @tswow-end
@@ -386,8 +381,6 @@ void World::AddSession_(WorldSession* s)
         {
             TC_LOG_INFO("misc", "PlayerQueue: Account id {} queued due to too many loading sessions ({}/{}). Queue Position ({}).", 
                        s->GetAccountId(), loadingSessions, MAX_LOADING_SESSIONS, ++QueueSize);
-            TC_LOG_WARN("perf", "QUEUE_DUE_TO_LOADING - Sessions: {}, Loading: {}, Queued: {}, Account: {}", 
-                       Sessions, loadingSessions, QueueSize, s->GetAccountId());
         }
         else
         {
@@ -2540,18 +2533,6 @@ void World::Update(uint32 diff)
     WriteEpochLaunchLog();
     clear_lua_garbage();
     TC_METRIC_TIMER("world_update_time_total");
-    
-    static auto last_global_perf_check = std::chrono::steady_clock::now();
-    static auto last_world_update_time = std::chrono::high_resolution_clock::now();
-    auto world_update_start = std::chrono::high_resolution_clock::now();
-    
-    // Track time between World::Update calls
-    auto time_since_last_update = std::chrono::duration_cast<std::chrono::milliseconds>(world_update_start - last_world_update_time);
-    if (time_since_last_update.count() > 100) { // Log if >100ms between updates
-        TC_LOG_WARN("perf", "WORLD_UPDATE_GAP - {}ms gap between updates, Sessions: {}, Loading: {}", 
-                   time_since_last_update.count(), m_sessions.size(), GetLoadingSessionCount());
-    }
-    last_world_update_time = world_update_start;
     ///- Update the game time and check for shutdown time
     _UpdateGameTime();
     time_t currentGameTime = GameTime::GetGameTime();
@@ -3337,8 +3318,6 @@ void World::SendServerMessage(ServerMessageType messageID, std::string stringPar
 
 void World::UpdateSessions(uint32 diff)
 {
-    static auto last_perf_check = std::chrono::steady_clock::now();
-    auto session_start_time = std::chrono::high_resolution_clock::now();
     {
         ZoneScopedN("AddSessions");
         TC_METRIC_DETAILED_NO_THRESHOLD_TIMER("world_update_time",
@@ -3406,40 +3385,6 @@ void World::UpdateSessions(uint32 diff)
             std::string str = ss.str();
             TracyMessage(str.c_str(), str.size());
         }
-    }
-    
-    // Performance monitoring every 5 seconds
-    auto session_end_time = std::chrono::high_resolution_clock::now();
-    auto session_duration = std::chrono::duration_cast<std::chrono::microseconds>(session_end_time - session_start_time);
-    auto now = std::chrono::steady_clock::now();
-    
-    if (std::chrono::duration_cast<std::chrono::seconds>(now - last_perf_check).count() >= 5) {
-        // Resource monitoring
-        HANDLE process = GetCurrentProcess();
-        DWORD handle_count;
-        GetProcessHandleCount(process, &handle_count);
-        
-        PROCESS_MEMORY_COUNTERS_EX pmc;
-        GetProcessMemoryInfo(process, (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc));
-        
-        // Thread info
-        DWORD thread_id = GetCurrentThreadId();
-        int priority = GetThreadPriority(GetCurrentThread());
-        DWORD core = GetCurrentProcessorNumber();
-        
-        TC_LOG_INFO("perf", "PERF_MONITOR - Sessions: {}, Loading: {}, Queued: {}, Handles: {}, WorkingSet: {}MB, "
-                   "UpdateSessions: {}μs, ThreadID: {}, Priority: {}, Core: {}", 
-                   m_sessions.size(), GetLoadingSessionCount(), GetQueuedSessionCount(),
-                   handle_count, pmc.WorkingSetSize / (1024*1024), session_duration.count(),
-                   thread_id, priority, core);
-        
-        last_perf_check = now;
-    }
-    
-    // Log slow UpdateSessions calls
-    if (session_duration.count() > 10000) { // >10ms
-        TC_LOG_WARN("perf", "SLOW_UPDATE_SESSIONS - Duration: {}μs, Sessions: {}, Loading: {}, Queued: {}", 
-                   session_duration.count(), m_sessions.size(), GetLoadingSessionCount(), GetQueuedSessionCount());
     }
 }
 
