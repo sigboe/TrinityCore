@@ -98,6 +98,8 @@
 #include "WeatherMgr.h"
 #include "WhoListStorage.h"
 #include "WorldSession.h"
+#include "QueryHolder.h"
+#include "DatabaseEnv.h"
 
 #include <boost/asio/ip/address.hpp>
 
