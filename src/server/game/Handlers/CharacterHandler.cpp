@@ -755,7 +755,6 @@ void WorldSession::HandlePlayerLoginOpcode(WorldPacket& recvData)
     }
 
     m_playerLoading = true;
-    sWorld->IncrementLoadingSessionCount();
     /** @epoch-end */
 
     if (!IsLegitCharacterForAccount(playerGuid))
@@ -768,11 +767,7 @@ void WorldSession::HandlePlayerLoginOpcode(WorldPacket& recvData)
     std::shared_ptr<LoginQueryHolder> holder = std::make_shared<LoginQueryHolder>(GetAccountId(), playerGuid);
     if (!holder->Initialize())
     {
-        if (m_playerLoading)
-        {
-            m_playerLoading = false;
-            sWorld->DecrementLoadingSessionCount();
-        }
+        m_playerLoading = false;
         return;
     }
 
@@ -799,11 +794,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder const& holder)
         SetPlayer(nullptr);
         KickPlayer("WorldSession::HandlePlayerLogin Player::LoadFromDB failed"); // disconnect client, player no set to session and it will not deleted or saved at kick
         delete pCurrChar;                                   // delete it manually
-        if (m_playerLoading)
-        {
-            m_playerLoading = false;
-            sWorld->DecrementLoadingSessionCount();
-        }
+        m_playerLoading = false;
         return;
     }
 
@@ -1070,11 +1061,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder const& holder)
     if (!pCurrChar->IsStandState() && !pCurrChar->HasUnitState(UNIT_STATE_STUNNED))
         pCurrChar->SetStandState(UNIT_STAND_STATE_STAND);
 
-    if (m_playerLoading)
-    {
-        m_playerLoading = false;
-        sWorld->DecrementLoadingSessionCount();
-    }
+    m_playerLoading = false;
 
     // Handle Login-Achievements (should be handled after loading)
     _player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_ON_LOGIN, 1);
