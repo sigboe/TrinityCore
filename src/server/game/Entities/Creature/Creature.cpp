@@ -1115,6 +1115,9 @@ void Creature::Update(uint32 diff)
     if (!GetMap()->HavePlayers())
         return;
 
+    if (m_lastTickTime - m_lastNotifiedTime < 0.5f)
+        return;
+
     // Creature must move some consequential distance to need notify
     if (!isNeedNotify(NOTIFY_VISIBILITY_CHANGED))
     {
@@ -1132,8 +1135,6 @@ void Creature::Update(uint32 diff)
     // so we find a 'slot' based on the dynamic period where this particular
     // unit should perform its notify.
     uint32 period = GetMap()->GetVisibilityNotifyPeriod();
-    if (m_lastTickTime - m_lastNotifiedTime < period)
-        return;
     uint32 currentOffset = m_lastTickTime % period;
     uint32 lastOffset = (m_lastTickTime - diff) % period;
     uint32 guidOffset = GetGUID().GetCounter() % period;
