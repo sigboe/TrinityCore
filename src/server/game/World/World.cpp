@@ -2625,13 +2625,6 @@ void World::Update(uint32 diff)
         UpdateSessions(diff);
     }
 
-    {
-        /// <li> Process queued login callbacks
-        ZoneScopedNC("World::ProcessLoginCallbacks", WORLD_UPDATE_COLOR)
-        TC_METRIC_TIMER("world_update_time", TC_METRIC_TAG("type", "Process login callbacks"));
-        ProcessLoginCallbacks();
-    }
-
     /// <li> Update uptime table
     if (m_timers[WUPDATE_UPTIME].Passed())
     {
@@ -3817,33 +3810,6 @@ void World::ReloadRBAC()
 void World::RemoveOldCorpses()
 {
     m_timers[WUPDATE_CORPSES].SetCurrent(m_timers[WUPDATE_CORPSES].GetInterval());
-}
-
-void World::AddLoginCallback(WorldSession* session, LoginQueryHolder const& callback)
-{
-    LoginCallbackData data;
-    data.session = session;
-    data.queryHolder = std::make_shared<LoginQueryHolder const>(callback);
-    m_LoginCallbacks.push(data);
-}
-
-void World::ProcessLoginCallbacks()
-{
-    constexpr uint32 MAX_LOGIN_CALLBACKS_PER_TICK = 5;
-    uint32 processed = 0;
-    
-    while (!m_LoginCallbacks.empty() && processed < MAX_LOGIN_CALLBACKS_PER_TICK)
-    {
-        LoginCallbackData data = m_LoginCallbacks.front();
-        m_LoginCallbacks.pop();
-        
-        if (data.session && data.queryHolder && !data.session->PlayerDisconnected())
-        {
-            data.session->HandlePlayerLogin(*data.queryHolder);
-        }
-        
-        ++processed;
-    }
 }
 
 Realm realm;
