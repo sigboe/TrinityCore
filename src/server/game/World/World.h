@@ -657,8 +657,7 @@ class TC_GAME_API World
         uint32 GetQueuedSessionCount() const { return m_QueuedPlayer.size(); }
         uint32 GetLoadingSessionCount() const { return m_loadingSessionCount.load(); }
         void IncrementLoadingSessionCount() { ++m_loadingSessionCount; }
-        void DecrementLoadingSessionCount();
-        void ProcessQueuedPlayers();
+        void DecrementLoadingSessionCount() { --m_loadingSessionCount; }
         /// Get the maximum number of parallel sessions on the server since last reboot
         uint32 GetMaxQueuedSessionCount() const { return m_maxQueuedSessionCount; }
         uint32 GetMaxActiveSessionCount() const { return m_maxActiveSessionCount; }
