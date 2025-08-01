@@ -476,27 +476,49 @@ bool World::RemoveQueuedPlayer(WorldSession* sess)
     if (!found && sessions)
         --sessions;
 
-    // accept first in queue
-    uint32 loadingSessions = GetLoadingSessionCount();
-    constexpr uint32 MAX_LOADING_SESSIONS = 100;
+    // Process queue if there's capacity available
+    ProcessQueuedPlayers();
     
-    if ((!m_playerLimit || sessions < m_playerLimit) && loadingSessions < MAX_LOADING_SESSIONS && !m_QueuedPlayer.empty())
+    // Update iterator after potential queue processing
+    iter = m_QueuedPlayer.begin();
+    position = 1;
+
+    return found;
+}
+
+void World::DecrementLoadingSessionCount()
+{
+    --m_loadingSessionCount;
+    ProcessQueuedPlayers();
+}
+
+void World::ProcessQueuedPlayers()
+{
+    if (m_QueuedPlayer.empty())
+        return;
+        
+    uint32 sessions = GetActiveSessionCount();
+    uint32 loadingSessions = GetLoadingSessionCount();
+    constexpr uint32 MAX_LOADING_SESSIONS = 5;
+    
+    // Process queue while we have capacity
+    while (!m_QueuedPlayer.empty() && 
+           (!m_playerLimit || sessions < m_playerLimit) && 
+           loadingSessions < MAX_LOADING_SESSIONS)
     {
         WorldSession* pop_sess = m_QueuedPlayer.front();
         pop_sess->InitializeSession();
         m_QueuedPlayer.pop_front();
-
-        // update iter to point first queued socket or end() if queue is empty now
-        iter = m_QueuedPlayer.begin();
-        position = 1;
+        
+        // Update counts for next iteration
+        sessions = GetActiveSessionCount();
+        loadingSessions = GetLoadingSessionCount();
     }
-
-    // update position from iter to end()
-    // iter point to first not updated socket, position store new position
-    for (; iter != m_QueuedPlayer.end(); ++iter, ++position)
+    
+    // Update queue positions for remaining players
+    uint32 position = 1;
+    for (Queue::iterator iter = m_QueuedPlayer.begin(); iter != m_QueuedPlayer.end(); ++iter, ++position)
         (*iter)->SendAuthWaitQueue(position);
-
-    return found;
 }
 
 /// Initialize config values
@@ -3305,6 +3327,15 @@ void World::UpdateSessions(uint32 diff)
         WorldSession* sess = nullptr;
         while (addSessQueue.next(sess))
             AddSession_(sess);
+    }
+
+    {
+        ZoneScopedN("ProcessQueuedPlayers");
+        TC_METRIC_DETAILED_NO_THRESHOLD_TIMER("world_update_time",
+            TC_METRIC_TAG("type", "Process queued players"),
+            TC_METRIC_TAG("parent_type", "Update sessions"));
+        ///- Process queued players if there's capacity
+        ProcessQueuedPlayers();
     }
 
     ///- Then send an update signal to remaining ones
