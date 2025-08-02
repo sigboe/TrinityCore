@@ -432,56 +432,6 @@ bool World::RemoveQueuedPlayer(WorldSession* sess)
     return wasRemoved;
 }
 
-// bool World::RemoveQueuedPlayer(WorldSession* sess)
-// {
-//     // sessions count including queued to remove (if removed_session set)
-//     uint32 sessions = GetActiveSessionCount();
-
-//     uint32 position = 1;
-//     Queue::iterator iter = m_QueuedPlayer.begin();
-
-//     // search to remove and count skipped positions
-//     bool found = false;
-
-//     for (; iter != m_QueuedPlayer.end(); ++iter, ++position)
-//     {
-//         if (*iter == sess)
-//         {
-//             sess->SetInQueue(false);
-//             sess->ResetTimeOutTime(false);
-//             iter = m_QueuedPlayer.erase(iter);
-//             found = true;                                   // removing queued session
-//             break;
-//         }
-//     }
-
-//     // iter point to next socked after removed or end()
-//     // position store position of removed socket and then new position next socket after removed
-
-//     // if session not queued then we need decrease sessions count
-//     if (!found && sessions)
-//         --sessions;
-
-//     // accept first in queue
-//     if ((!m_playerLimit || sessions < m_playerLimit) && !m_QueuedPlayer.empty())
-//     {
-//         WorldSession* pop_sess = m_QueuedPlayer.front();
-//         pop_sess->InitializeSession();
-//         m_QueuedPlayer.pop_front();
-
-//         // update iter to point first queued socket or end() if queue is empty now
-//         iter = m_QueuedPlayer.begin();
-//         position = 1;
-//     }
-
-//     // update position from iter to end()
-//     // iter point to first not updated socket, position store new position
-//     for (; iter != m_QueuedPlayer.end(); ++iter, ++position)
-//         (*iter)->SendAuthWaitQueue(position);
-
-//     return found;
-// }
-
 /// Initialize config values
 void World::LoadConfigSettings(bool reload)
 {
