@@ -31,17 +31,15 @@
 #include "Timer.h"
 
 #include <atomic>
+#include <deque>
 #include <list>
 #include <map>
-#include <memory>
-#include <queue>
 #include <unordered_map>
 
 class Player;
 class WorldPacket;
 class WorldSession;
 class WorldSocket;
-class LoginQueryHolder;
 struct Realm;
 
 // ServerMessages.dbc

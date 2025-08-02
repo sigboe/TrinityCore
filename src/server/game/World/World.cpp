@@ -311,7 +311,6 @@ bool World::RemoveSession(uint32 id)
     SessionMap::const_iterator itr = m_sessions.find(id);
     if (itr != m_sessions.end() && itr->second)
     {
-        // This includes the sessions in the loginCallbackQueue
         if (itr->second->PlayerLoading())
             return false;
 
