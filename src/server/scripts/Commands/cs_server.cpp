@@ -103,6 +103,10 @@ public:
             { "info",         rbac::RBAC_PERM_COMMAND_SERVER_INFO,         true, &HandleServerInfoCommand,    "" },
             { "motd",         rbac::RBAC_PERM_COMMAND_SERVER_MOTD,         true, &HandleServerMotdCommand,    "" },
             { "plimit",       rbac::RBAC_PERM_COMMAND_SERVER_PLIMIT,       true, &HandleServerPLimitCommand,  "" },
+            { "climit",       rbac::RBAC_PERM_COMMAND_SERVER_PLIMIT,       true, &HandleServerCLimitCommand,  "" },
+            { "queuetime",    rbac::RBAC_PERM_COMMAND_SERVER_PLIMIT,       true, &HandleServerQueueTimeThresholdCommand, "" },
+            { "queueplayers", rbac::RBAC_PERM_COMMAND_SERVER_PLIMIT,       true, &HandleServerQueuePlayersPerTenMsCommand, "" },
+            { "maptime",      rbac::RBAC_PERM_COMMAND_SERVER_PLIMIT,       true, &HandleServerMapTimeThresholdCommand, "" },
             { "restart",      rbac::RBAC_PERM_COMMAND_SERVER_RESTART,      true, nullptr,                     "", serverRestartCommandTable },
             { "shutdown",     rbac::RBAC_PERM_COMMAND_SERVER_SHUTDOWN,     true, nullptr,                     "", serverShutdownCommandTable },
             { "set",          rbac::RBAC_PERM_COMMAND_SERVER_SET,          true, nullptr,                     "", serverSetCommandTable },
@@ -341,6 +345,62 @@ public:
                 break;
         }
         handler->PSendSysMessage("Player limits: amount %u, min. security level %s.", playerLimit, secName);
+
+        return true;
+    }
+
+    static bool HandleServerCLimitCommand(ChatHandler* handler, char const* args)
+    {
+        if (*args)
+        {
+            uint32 value = uint32(atoi(args));
+            sWorld->SetConnectionLimit(value);
+        }
+
+        uint32 connectionLimit = sWorld->GetConnectionLimit();
+        handler->PSendSysMessage("Connection limit: %u", connectionLimit);
+
+        return true;
+    }
+
+    static bool HandleServerQueueTimeThresholdCommand(ChatHandler* handler, char const* args)
+    {
+        if (*args)
+        {
+            uint32 value = uint32(atoi(args));
+            sWorld->setIntConfig(CONFIG_QUEUE_UPDATE_TIME_THRESHOLD, value);
+        }
+
+        uint32 threshold = sWorld->getIntConfig(CONFIG_QUEUE_UPDATE_TIME_THRESHOLD);
+        handler->PSendSysMessage("Queue time threshold: %u ms", threshold);
+
+        return true;
+    }
+
+    static bool HandleServerQueuePlayersPerTenMsCommand(ChatHandler* handler, char const* args)
+    {
+        if (*args)
+        {
+            uint32 value = uint32(atoi(args));
+            sWorld->setIntConfig(CONFIG_QUEUE_PLAYERS_PER_TEN_MS, value);
+        }
+
+        uint32 players = sWorld->getIntConfig(CONFIG_QUEUE_PLAYERS_PER_TEN_MS);
+        handler->PSendSysMessage("Queue players per 10ms: %u", players);
+
+        return true;
+    }
+
+    static bool HandleServerMapTimeThresholdCommand(ChatHandler* handler, char const* args)
+    {
+        if (*args)
+        {
+            uint32 value = uint32(atoi(args));
+            sWorld->setIntConfig(CONFIG_MAP_UPDATE_TIME_THRESHOLD, value);
+        }
+
+        uint32 threshold = sWorld->getIntConfig(CONFIG_MAP_UPDATE_TIME_THRESHOLD);
+        handler->PSendSysMessage("Map time threshold: %u ms", threshold);
 
         return true;
     }
