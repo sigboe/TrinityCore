@@ -1562,6 +1562,7 @@ void World::LoadConfigSettings(bool reload)
     // Queue processing configuration
     m_int_configs[CONFIG_QUEUE_UPDATE_TIME_THRESHOLD] = sConfigMgr->GetIntDefault("Queue.Update.TimeThreshold", 100);   // 100ms default
     m_int_configs[CONFIG_QUEUE_PLAYERS_PER_TEN_MS] = sConfigMgr->GetIntDefault("Queue.Update.PlayersPerTenMs", 1);       // 1 player per 10ms default
+    m_int_configs[CONFIG_MAP_UPDATE_TIME_THRESHOLD] = sConfigMgr->GetIntDefault("Map.Update.TimeThreshold", 150);        // 150ms default (same as MAX_DIFF_THRESHOLD)
 
     // Specifies if IP addresses can be logged to the database
     m_bool_configs[CONFIG_ALLOW_LOGGING_IP_ADDRESSES_IN_DATABASE] = sConfigMgr->GetBoolDefault("AllowLoggingIPAddressesInDatabase", true, true);

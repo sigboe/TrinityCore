@@ -293,6 +293,16 @@ Queue.Update.TimeThreshold = 100
 Queue.Update.PlayersPerTenMs = 1
 
 #
+#    Map.Update.TimeThreshold
+#        Description: Time threshold in milliseconds for map update performance adjustment.
+#                     When map update times exceed this threshold, the server will incrementally
+#                     adjust visible distance and notification periods to help combat performance
+#                     degradation by reducing visibility processing load.
+#        Default:     150 - (150 milliseconds)
+
+Map.Update.TimeThreshold = 150
+
+#
 #    MaxOverspeedPings
 #        Description: Maximum overspeed ping count before character is disconnected.
 #        Default:     2  - (Enabled, Minimum value)
