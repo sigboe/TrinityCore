@@ -356,7 +356,7 @@ void World::AddSession_(WorldSession* s)
 
     m_sessions[s->GetAccountId()] = s;
 
-    if (pLimit > 0 && count >= pLimit && !s->HasPermission(rbac::RBAC_PERM_SKIP_QUEUE) && !HasRecentlyDisconnected(s))
+    if (pLimit > 0 && (count >= pLimit || !m_QueuedPlayer.empty()) && !s->HasPermission(rbac::RBAC_PERM_SKIP_QUEUE) && !HasRecentlyDisconnected(s))
     {
         AddQueuedPlayer(s);
         UpdateMaxSessionCounters();
