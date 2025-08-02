@@ -306,7 +306,7 @@ public:
                 sWorld->SetPlayerSecurityLimit(SEC_ADMINISTRATOR);
             else if (strncmp(paramStr, "reset", limit) == 0)
             {
-                sWorld->SetPlayerAmountLimit(sConfigMgr->GetIntDefault("PlayerLimit", 100));
+                sWorld->SetPlayerLimit(sConfigMgr->GetIntDefault("PlayerLimit", 100));
                 sWorld->LoadDBAllowedSecurityLevel();
             }
             else
@@ -315,11 +315,11 @@ public:
                 if (value < 0)
                     sWorld->SetPlayerSecurityLimit(AccountTypes(-value));
                 else
-                    sWorld->SetPlayerAmountLimit(uint32(value));
+                    sWorld->SetPlayerLimit(uint32(value));
             }
         }
 
-        uint32 playerAmountLimit = sWorld->GetPlayerAmountLimit();
+        uint32 playerLimit = sWorld->GetPlayerLimit();
         AccountTypes allowedAccountType = sWorld->GetPlayerSecurityLimit();
         char const* secName = "";
         switch (allowedAccountType)
@@ -340,7 +340,7 @@ public:
                 secName = "<unknown>";
                 break;
         }
-        handler->PSendSysMessage("Player limits: amount %u, min. security level %s.", playerAmountLimit, secName);
+        handler->PSendSysMessage("Player limits: amount %u, min. security level %s.", playerLimit, secName);
 
         return true;
     }

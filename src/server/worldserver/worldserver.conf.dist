@@ -257,21 +257,40 @@ Compression = 1
 
 #
 #    PlayerLimit
-#        Description: Maximum number of players in the world. Excluding Mods, GMs and Admins.
+#        Description: Maximum number of players in the world before starting to queue them.
 #          Important: If you want to block players and only allow Mods, GMs or Admins to join the
 #                     server, use the DB field "auth.realmlist.allowedSecurityLevel".
-#            Default: 0   - (Disabled, No limit)
+#            Default: 0   - (Disabled, No Queue)
 #                     1+  - (Enabled)
 
 PlayerLimit = 0
 
 #
-#    PlayerLimit.NoQueue
-#        Description: Kick players over limit rather than add to queue
-#            Default: 0   - (Overflow to Queue)
-#                     1+  - (No Queue)
+#    ConnectionLimit
+#        Description: Maximum number of connections in the world we reject auth
+#            Default: 0   - (Disabled, No Limit)
+#                     1+  - (Enabled)
 
-PlayerLimit.NoQueue = 0
+ConnectionLimit = 0
+
+#
+#    Queue.Update.TimeThreshold
+#        Description: Time threshold in milliseconds for queue processing.
+#                     The server will only process queued players if the session update time
+#                     is below this threshold, preventing performance degradation during high load.
+#        Default:     100 - (100 milliseconds)
+
+Queue.Update.TimeThreshold = 100
+
+#
+#    Queue.Update.PlayersPerTenMs
+#        Description: Number of players to initialize per 10ms of available processing time.
+#                     For example, if TimeThreshold is 100ms and session updates took 30ms,
+#                     there are 70ms available. With this set to 1, up to 7 players would be
+#                     processed from the queue (70ms / 10ms * 1 player = 7 players).
+#        Default:     1 - (1 player per 10ms)
+
+Queue.Update.PlayersPerTenMs = 1
 
 #
 #    MaxOverspeedPings
