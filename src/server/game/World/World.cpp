@@ -98,8 +98,6 @@
 #include "WeatherMgr.h"
 #include "WhoListStorage.h"
 #include "WorldSession.h"
-#include "QueryHolder.h"
-#include "DatabaseEnv.h"
 
 #include <boost/asio/ip/address.hpp>
 
@@ -3284,11 +3282,6 @@ void World::UpdateSessions(uint32 diff)
                 if (!RemoveQueuedPlayer(pSession) && itr->second && getIntConfig(CONFIG_INTERVAL_DISCONNECT_TOLERANCE))
                     m_disconnects[itr->second->GetAccountId()] = GameTime::GetGameTime();
                 
-                // Clean up any pending login callbacks for this session
-                m_LoginCallbacks.remove_if([pSession](const LoginCallbackData& callback) {
-                    return callback.session == pSession;
-                });
-                
                 m_sessions.erase(itr);
 
                 delete pSession;
@@ -3351,12 +3344,6 @@ void World::UpdateSessions(uint32 diff)
                 ++processedPlayers;
             }
         }
-    }
-
-    {
-        ZoneScopedN("ProcessLoginCallbacks")
-
-        ProcessLoginCallbacks();
     }
 }
 
@@ -3826,33 +3813,6 @@ void World::ReloadRBAC()
 void World::RemoveOldCorpses()
 {
     m_timers[WUPDATE_CORPSES].SetCurrent(m_timers[WUPDATE_CORPSES].GetInterval());
-}
-
-void World::AddLoginCallback(WorldSession* session, std::shared_ptr<LoginQueryHolder const> callback)
-{
-    LoginCallbackData data;
-    data.session = session;
-    data.queryHolder = callback;
-    m_LoginCallbacks.push_back(data);
-}
-
-void World::ProcessLoginCallbacks()
-{
-    constexpr uint32 MAX_LOGIN_CALLBACKS_PER_TICK = 5;
-    uint32 processed = 0;
-    
-    while (!m_LoginCallbacks.empty() && processed < MAX_LOGIN_CALLBACKS_PER_TICK)
-    {
-        LoginCallbackData data = m_LoginCallbacks.front();
-        m_LoginCallbacks.pop_front();
-        
-        if (data.session && data.queryHolder && !data.session->PlayerDisconnected())
-        {
-            data.session->HandlePlayerLogin(*data.queryHolder);
-        }
-        
-        ++processed;
-    }
 }
 
 Realm realm;
