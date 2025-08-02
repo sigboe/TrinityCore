@@ -319,7 +319,7 @@ bool World::RemoveSession(uint32 id)
 
         itr->second->KickPlayer("World::RemoveSession");
 
-        RemoveQueuedPlayer(itr->second)
+        RemoveQueuedPlayer(itr->second);
 
         delete itr->second;
     }
