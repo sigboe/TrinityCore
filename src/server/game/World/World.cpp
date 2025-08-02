@@ -3317,11 +3317,22 @@ void World::UpdateSessions(uint32 diff)
         }
 
         // Process queued players if update time is below threshold
+        // Maintain rolling average of last 10 update times
+        m_recentUpdateTimes.push_back(diff);
+        if (m_recentUpdateTimes.size() > 10)
+            m_recentUpdateTimes.pop_front();
+        
+        // Calculate average update time
+        uint32 totalTime = 0;
+        for (uint32 time : m_recentUpdateTimes)
+            totalTime += time;
+        uint32 avgUpdateTime = totalTime / m_recentUpdateTimes.size();
+        
         uint32 timeThreshold = getIntConfig(CONFIG_QUEUE_UPDATE_TIME_THRESHOLD);
-        if (diff < timeThreshold && !m_QueuedPlayer.empty())
+        if (avgUpdateTime < timeThreshold && !m_QueuedPlayer.empty())
         {
             uint32 playersPerTenMs = getIntConfig(CONFIG_QUEUE_PLAYERS_PER_TEN_MS);
-            uint32 maxPlayersToProcess = (timeThreshold - diff) / 10 * playersPerTenMs;
+            uint32 maxPlayersToProcess = (timeThreshold - avgUpdateTime) / 10 * playersPerTenMs;
             uint32 processedPlayers = 0;
             
             while (!m_QueuedPlayer.empty() && processedPlayers < maxPlayersToProcess)

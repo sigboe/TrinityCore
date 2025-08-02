@@ -949,6 +949,7 @@ class TC_GAME_API World
 
         //Player Queue
         Queue m_QueuedPlayer;
+        std::deque<uint32> m_recentUpdateTimes;
 
         //LoginCallback Queue
         struct LoginCallbackData
