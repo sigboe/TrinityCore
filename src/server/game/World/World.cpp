@@ -3297,8 +3297,7 @@ void World::UpdateSessions(uint32 diff)
         }
 
         uint64_t end = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        uint32 updateTime = uint32(end - start);
-        if (updateTime > 250)
+        if (end - start > 250)
         {
             using opcode_pair = std::pair<uint32, uint32>;
             std::vector<opcode_pair> pairs;
@@ -3319,10 +3318,10 @@ void World::UpdateSessions(uint32 diff)
 
         // Process queued players if update time is below threshold
         uint32 timeThreshold = getIntConfig(CONFIG_QUEUE_UPDATE_TIME_THRESHOLD);
-        if (updateTime < timeThreshold && !m_QueuedPlayer.empty())
+        if (diff < timeThreshold && !m_QueuedPlayer.empty())
         {
             uint32 playersPerTenMs = getIntConfig(CONFIG_QUEUE_PLAYERS_PER_TEN_MS);
-            uint32 maxPlayersToProcess = (timeThreshold - updateTime) / 10 * playersPerTenMs;
+            uint32 maxPlayersToProcess = (timeThreshold - diff) / 10 * playersPerTenMs;
             uint32 processedPlayers = 0;
             
             while (!m_QueuedPlayer.empty() && processedPlayers < maxPlayersToProcess)
