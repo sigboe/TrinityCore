@@ -3325,7 +3325,7 @@ void World::UpdateSessions(uint32 diff)
         if (avgUpdateTime < timeThreshold && !m_QueuedPlayer.empty())
         {
             uint32 playersPerTenMs = getIntConfig(CONFIG_QUEUE_PLAYERS_PER_TEN_MS);
-            uint32 maxPlayersToProcess = (timeThreshold - avgUpdateTime) / 10 * playersPerTenMs;
+            uint32 maxPlayersToProcess = 1 + (timeThreshold - avgUpdateTime) / 10 * playersPerTenMs;
             uint32 processedPlayers = 0;
             
             while (!m_QueuedPlayer.empty() && processedPlayers < maxPlayersToProcess)
