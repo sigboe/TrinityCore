@@ -48,15 +48,6 @@ add_library(game
   # tswow-end
   )
 
-# tswow-begin
-target_compile_definitions(game PRIVATE
-  $<$<CONFIG:Debug>:LIVESCRIPT_BUILD_TYPE=\"Debug\">
-  $<$<CONFIG:Release>:LIVESCRIPT_BUILD_TYPE=\"Release\">
-  $<$<CONFIG:RelWithDebInfo>:LIVESCRIPT_BUILD_TYPE=\"RelWithDebInfo\">
-  $<$<CONFIG:MinSizeRel>:LIVESCRIPT_BUILD_TYPE=\"MinSizeRel\">
-)
-# tswow-end
-
 target_include_directories(game
   PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}
@@ -88,7 +79,7 @@ FILE(GLOB TSWOW_PUBLIC ${TSWOW_CORE_PUBLIC}/*)
 FILE(GLOB TSWOW_PRIVATE ${TSWOW_CORE_PRIVATE}/*)
 FILE(GLOB TSWOW_MESSAGES ${TSWOW_MESSAGES_INCLUDES}/*)
 
-target_compile_definitions(game PUBLIC CUSTOM_PACKET_API=TC_GAME_API)
+target_compile_definitions(game PUBLIC CUSTOM_PACKET_API=TC_GAME_API TRINITY_BUILD_NAME="${TRINITY_BUILD_NAME}")
 target_compile_definitions(game PUBLIC TRINITY=1)
 
 

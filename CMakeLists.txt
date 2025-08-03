@@ -22,6 +22,9 @@ if (WIN32)
   cmake_policy(SET CMP0135 NEW) # use local timestamps for FetchContent
 endif()
 
+set(TRINITY_BUILD_NAME "${CMAKE_BUILD_TYPE}" CACHE STRING "Trinity build name")
+add_compile_definitions(TRINITY_BUILD_NAME="${TRINITY_BUILD_NAME}")
+
 include(FetchContent)
 
 FetchContent_Declare(
