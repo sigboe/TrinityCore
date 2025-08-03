@@ -107,6 +107,7 @@ public:
             { "queuetime",    rbac::RBAC_PERM_COMMAND_SERVER_PLIMIT,       true, &HandleServerQueueTimeThresholdCommand, "" },
             { "queueplayers", rbac::RBAC_PERM_COMMAND_SERVER_PLIMIT,       true, &HandleServerQueuePlayersPerTenMsCommand, "" },
             { "maptime",      rbac::RBAC_PERM_COMMAND_SERVER_PLIMIT,       true, &HandleServerMapTimeThresholdCommand, "" },
+            { "maprespawn",   rbac::RBAC_PERM_COMMAND_SERVER_PLIMIT,       true, &HandleServerMapRespawnCommand, "" },
             { "restart",      rbac::RBAC_PERM_COMMAND_SERVER_RESTART,      true, nullptr,                     "", serverRestartCommandTable },
             { "shutdown",     rbac::RBAC_PERM_COMMAND_SERVER_SHUTDOWN,     true, nullptr,                     "", serverShutdownCommandTable },
             { "set",          rbac::RBAC_PERM_COMMAND_SERVER_SET,          true, nullptr,                     "", serverSetCommandTable },
@@ -401,6 +402,20 @@ public:
 
         uint32 threshold = sWorld->getIntConfig(CONFIG_MAP_UPDATE_TIME_THRESHOLD);
         handler->PSendSysMessage("Map time threshold: %u ms", threshold);
+
+        return true;
+    }
+
+    static bool HandleServerMapRespawnCommand(ChatHandler* handler, char const* args)
+    {
+        if (*args)
+        {
+            uint32 value = uint32(atoi(args));
+            sWorld->setIntConfig(CONFIG_MAX_RESPAWN_COUNT_ON_UPDATE, value);
+        }
+
+        uint32 respawnCount = sWorld->getIntConfig(CONFIG_MAX_RESPAWN_COUNT_ON_UPDATE);
+        handler->PSendSysMessage("Max respawn count on update: %u", respawnCount);
 
         return true;
     }

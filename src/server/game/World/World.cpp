@@ -754,7 +754,6 @@ void World::LoadConfigSettings(bool reload)
     m_bool_configs[CONFIG_NAME_RESERVATION] = sConfigMgr->GetBoolDefault("NameReservation", false);
     m_bool_configs[CONFIG_ALWAYS_UPDATE_WAYPOINT_CREATURES] = sConfigMgr->GetBoolDefault("AlwaysUpdateWaypointCreatures", false);
     m_bool_configs[CONFIG_HIDE_GAMEOBJECT_SPARKLE] = sConfigMgr->GetBoolDefault("HideGameObjectSparkle", false);
-    m_int_configs[CONFIG_MAX_RESPAWN_COUNT_ON_UPDATE] = sConfigMgr->GetIntDefault("MaxRespawnCountOnUpdate", 0);
     m_int_configs[CONFIG_MUTE_DEFAULT_GUILD_BROADCASTS] = sConfigMgr->GetIntDefault("MuteDefaultGuildBroadcasts", 0);
     m_int_configs[CONFIG_SLOW_MODE_CHANNEL_MASK] = sConfigMgr->GetIntDefault("SlowMode.ChannelMask", 0);
     m_int_configs[CONFIG_SLOW_MODE_MUTE_TIME] = sConfigMgr->GetIntDefault("SlowMode.MuteTime", 0);
@@ -1493,7 +1492,6 @@ void World::LoadConfigSettings(bool reload)
     m_int_configs[CONFIG_ANTICHEAT_MAX_REPORTS_FOR_DAILY_REPORT] = sConfigMgr->GetIntDefault("Anticheat.MaxReportsForDailyReport",70);
     m_int_configs[CONFIG_ANTICHEAT_REPORT_IN_CHAT_MIN] = sConfigMgr->GetIntDefault("Anticheat.ReportinChat.Min", 70);
     m_int_configs[CONFIG_ANTICHEAT_REPORT_IN_CHAT_MAX] = sConfigMgr->GetIntDefault("Anticheat.ReportinChat.Max", 80);
-
     m_int_configs[CONFIG_ANTICHEAT_SPEED_LIMIT_TOLERANCE] = sConfigMgr->GetIntDefault("Anticheat.SpeedLimitTolerance", 4);
     m_int_configs[CONFIG_ANTICHEAT_MAX_REPORTS_FOR_BANS] = sConfigMgr->GetIntDefault("Anticheat.ReportsForBan", 70);
     m_int_configs[CONFIG_ANTICHEAT_MAX_REPORTS_FOR_KICKS] = sConfigMgr->GetIntDefault("Anticheat.ReportsForKick", 70);
@@ -1561,7 +1559,9 @@ void World::LoadConfigSettings(bool reload)
     // Queue processing configuration
     m_int_configs[CONFIG_QUEUE_UPDATE_TIME_THRESHOLD] = sConfigMgr->GetIntDefault("Queue.Update.TimeThreshold", 100);   // 100ms default
     m_int_configs[CONFIG_QUEUE_PLAYERS_PER_TEN_MS] = sConfigMgr->GetIntDefault("Queue.Update.PlayersPerTenMs", 1);       // 1 player per 10ms default
+    m_int_configs[CONFIG_QUEUE_POSITION_UPDATE_INTERVAL] = sConfigMgr->GetIntDefault("Queue.Position.UpdateInterval", 5); // 5 seconds default
     m_int_configs[CONFIG_MAP_UPDATE_TIME_THRESHOLD] = sConfigMgr->GetIntDefault("Map.Update.TimeThreshold", 150);        // 150ms default (same as MAX_DIFF_THRESHOLD)
+    m_int_configs[CONFIG_MAX_RESPAWN_COUNT_ON_UPDATE] = sConfigMgr->GetIntDefault("Map.Update.MaxRespawn", 0);
 
     // Specifies if IP addresses can be logged to the database
     m_bool_configs[CONFIG_ALLOW_LOGGING_IP_ADDRESSES_IN_DATABASE] = sConfigMgr->GetBoolDefault("AllowLoggingIPAddressesInDatabase", true, true);
@@ -2214,7 +2214,7 @@ void World::SetInitialWorldSettings()
 
     m_timers[WUPDATE_CHANNEL_SAVE].SetInterval(getIntConfig(CONFIG_PRESERVE_CUSTOM_CHANNEL_INTERVAL) * MINUTE * IN_MILLISECONDS);
 
-    m_timers[WUPDATE_QUEUE_POSITIONS].SetInterval(5 * IN_MILLISECONDS); // update queue positions every 5 seconds
+    m_timers[WUPDATE_QUEUE_POSITIONS].SetInterval(getIntConfig(CONFIG_QUEUE_POSITION_UPDATE_INTERVAL) * IN_MILLISECONDS); // configurable queue position update interval
 
     //to set mailtimer to return mails every day between 4 and 5 am
     //mailtimer is increased when updating auctions

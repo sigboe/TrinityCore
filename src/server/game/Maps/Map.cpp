@@ -782,26 +782,8 @@ void Map::UpdatePlayerZoneStats(uint32 oldZone, uint32 newZone)
 // @tswow-begin tracy
 void Map::Update(uint32 t_diff)
 {
-    // Dynamically adjust notifies based on rolling average of diff
-    // Maintain rolling average of last 10 update times
-    m_recentUpdateTimes.push_back(t_diff);
-    if (m_recentUpdateTimes.size() > 10)
-        m_recentUpdateTimes.pop_front();
-    
-    // Calculate average update time
-    uint32 totalTime = 0;
-    for (uint32 time : m_recentUpdateTimes)
-        totalTime += time;
-    uint32 avgUpdateTime = totalTime / m_recentUpdateTimes.size();
-    
-    uint32 timeThreshold = sWorld->getIntConfig(CONFIG_MAP_UPDATE_TIME_THRESHOLD);
-    if (avgUpdateTime > timeThreshold) {
-        m_VisibleDistance = std::max(m_VisibleDistance - 1.0f, m_VisibleDistanceMin);
-        m_VisibilityNotifyPeriod = std::min(m_VisibilityNotifyPeriod + 10, m_VisibilityNotifyPeriodMax);
-    } else {
-        m_VisibleDistance = std::min(m_VisibleDistance + 1.0f, m_VisibleDistanceMax);
-        m_VisibilityNotifyPeriod = std::max(m_VisibilityNotifyPeriod - 10, m_VisibilityNotifyPeriodMin);
-    }
+    // Record start time for this map's update
+    uint32 mapUpdateStartTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
     // @tswow-begin tswow-events
     {
@@ -1129,6 +1111,30 @@ void Map::Update(uint32 t_diff)
         TC_METRIC_TAG("map_id", std::to_string(GetId())),
         TC_METRIC_TAG("map_partitionid", std::to_string(GetPartitionId())),
         TC_METRIC_TAG("map_instanceid", std::to_string(GetInstanceId())));
+
+    // Calculate this map's actual update time and adjust visibility settings
+    uint32 mapUpdateEndTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    uint32 mapUpdateTime = mapUpdateEndTime - mapUpdateStartTime;
+    
+    // Maintain rolling average of last 10 map update times
+    m_recentUpdateTimes.push_back(mapUpdateTime);
+    if (m_recentUpdateTimes.size() > 10)
+        m_recentUpdateTimes.pop_front();
+    
+    // Calculate average map update time
+    uint32 totalTime = 0;
+    for (uint32 time : m_recentUpdateTimes)
+        totalTime += time;
+    uint32 avgMapUpdateTime = totalTime / m_recentUpdateTimes.size();
+    
+    uint32 timeThreshold = sWorld->getIntConfig(CONFIG_MAP_UPDATE_TIME_THRESHOLD);
+    if (avgMapUpdateTime > timeThreshold) {
+        m_VisibleDistance = std::max(m_VisibleDistance - 1.0f, m_VisibleDistanceMin);
+        m_VisibilityNotifyPeriod = std::min(m_VisibilityNotifyPeriod + 10, m_VisibilityNotifyPeriodMax);
+    } else {
+        m_VisibleDistance = std::min(m_VisibleDistance + 1.0f, m_VisibleDistanceMax);
+        m_VisibilityNotifyPeriod = std::max(m_VisibilityNotifyPeriod - 10, m_VisibilityNotifyPeriodMin);
+    }
 }
 // @tswow-end tracy
 
