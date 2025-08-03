@@ -123,6 +123,7 @@ TC_GAME_API int32 World::m_visibility_notify_periodInArenas     = DEFAULT_VISIBI
 World::World()
 {
     m_playerLimit = 0;
+    m_connectionLimit = 0;
     m_allowedSecurityLevel = SEC_PLAYER;
     m_allowMovement = true;
     m_ShutdownMask = 0;
@@ -306,15 +307,17 @@ WorldSession* World::FindSession(uint32 id) const
 /// Remove a given session
 bool World::RemoveSession(uint32 id)
 {
-    ///- Find the session, kick the user, but we can't delete session at this moment to prevent iterator invalidation
     SessionMap::const_iterator itr = m_sessions.find(id);
-
     if (itr != m_sessions.end() && itr->second)
     {
         if (itr->second->PlayerLoading())
             return false;
 
         itr->second->KickPlayer("World::RemoveSession");
+
+        RemoveQueuedPlayer(itr->second);
+
+        delete itr->second;
     }
 
     return true;
@@ -333,44 +336,23 @@ void World::AddSession_(WorldSession* s)
 
     ///- kick already loaded player with same account (if any) and remove session
     ///- if player is in loading and want to load again, return
+    // The player is loading from the time we get the login opcode until the character data is loaded, in this window
+    // we cannot replace their session as the client interaction is messy.  This also includes the loginCallbackQueue.
     if (!RemoveSession(s->GetAccountId()))
     {
         s->KickPlayer("World::AddSession_ Couldn't remove the other session while on loading screen");
-        delete s;                                           // session not added yet in session list, so not listed in queue
+        delete s; // session not added yet in session list, so not listed in queue
         return;
     }
 
-    // decrease session counts only at not reconnection case
-    bool decrease_session = true;
-
-    // if session already exist, prepare to it deleting at next world update
-    // NOTE - KickPlayer() should be called on "old" in RemoveSession()
-    {
-        SessionMap::const_iterator old = m_sessions.find(s->GetAccountId());
-
-        if (old != m_sessions.end())
-        {
-            // prevent decrease sessions count if session queued
-            if (RemoveQueuedPlayer(old->second))
-                decrease_session = false;
-            // not remove replaced session form queue if listed
-            delete old->second;
-        }
-    }
+    // Get counts before adding the new session
+    uint32 pLimit = GetPlayerLimit();
+    uint32 count = GetActiveAndQueuedSessionCount();
+    uint32 QueueSize = GetQueuedSessionCount(); //number of players in the queue
 
     m_sessions[s->GetAccountId()] = s;
 
-    uint32 Sessions = GetActiveAndQueuedSessionCount();
-    uint32 pLimit = GetPlayerAmountLimit();
-    bool pLimitNoQueue = sWorld->GetPlayerAmountLimitNoQueue();
-    uint32 QueueSize = GetQueuedSessionCount(); //number of players in the queue
-
-    //so we don't count the user trying to
-    //login as a session and queue the socket that we are using
-    if (decrease_session)
-        --Sessions;
-
-    if (!pLimitNoQueue && pLimit > 0 && Sessions >= pLimit && !s->HasPermission(rbac::RBAC_PERM_SKIP_QUEUE) && !HasRecentlyDisconnected(s))
+    if (pLimit > 0 && (count >= pLimit || !m_QueuedPlayer.empty()) && !s->HasPermission(rbac::RBAC_PERM_SKIP_QUEUE) && !HasRecentlyDisconnected(s))
     {
         AddQueuedPlayer(s);
         UpdateMaxSessionCounters();
@@ -379,7 +361,6 @@ void World::AddSession_(WorldSession* s)
     }
 
     s->InitializeSession();
-
     UpdateMaxSessionCounters();
 
     // Updates the population
@@ -436,52 +417,15 @@ void World::AddQueuedPlayer(WorldSession* sess)
 
 bool World::RemoveQueuedPlayer(WorldSession* sess)
 {
-    // sessions count including queued to remove (if removed_session set)
-    uint32 sessions = GetActiveSessionCount();
-
-    uint32 position = 1;
-    Queue::iterator iter = m_QueuedPlayer.begin();
-
-    // search to remove and count skipped positions
-    bool found = false;
-
-    for (; iter != m_QueuedPlayer.end(); ++iter, ++position)
+    auto oldSize = m_QueuedPlayer.size();
+    m_QueuedPlayer.remove(sess);
+    bool wasRemoved = m_QueuedPlayer.size() != oldSize;
+    if (wasRemoved)
     {
-        if (*iter == sess)
-        {
-            sess->SetInQueue(false);
-            sess->ResetTimeOutTime(false);
-            iter = m_QueuedPlayer.erase(iter);
-            found = true;                                   // removing queued session
-            break;
-        }
+        sess->SetInQueue(false);
+        sess->ResetTimeOutTime(false);
     }
-
-    // iter point to next socked after removed or end()
-    // position store position of removed socket and then new position next socket after removed
-
-    // if session not queued then we need decrease sessions count
-    if (!found && sessions)
-        --sessions;
-
-    // accept first in queue
-    if ((!m_playerLimit || sessions < m_playerLimit) && !m_QueuedPlayer.empty())
-    {
-        WorldSession* pop_sess = m_QueuedPlayer.front();
-        pop_sess->InitializeSession();
-        m_QueuedPlayer.pop_front();
-
-        // update iter to point first queued socket or end() if queue is empty now
-        iter = m_QueuedPlayer.begin();
-        position = 1;
-    }
-
-    // update position from iter to end()
-    // iter point to first not updated socket, position store new position
-    for (; iter != m_QueuedPlayer.end(); ++iter, ++position)
-        (*iter)->SendAuthWaitQueue(position);
-
-    return found;
+    return wasRemoved;
 }
 
 /// Initialize config values
@@ -507,8 +451,8 @@ void World::LoadConfigSettings(bool reload)
     // @tswow-en
 
     ///- Read the player limit and the Message of the day from the config file
-    SetPlayerAmountLimit(sConfigMgr->GetIntDefault("PlayerLimit", 100));
-    SetPlayerAmountLimitNoQueue(sConfigMgr->GetBoolDefault("PlayerLimit.NoQueue", false));
+    SetPlayerLimit(sConfigMgr->GetIntDefault("PlayerLimit", 100));
+    SetConnectionLimit(sConfigMgr->GetIntDefault("ConnectionLimit", 10000));
     Motd::SetMotd(sConfigMgr->GetStringDefault("Motd", "Welcome to a Trinity Core Server."));
 
     ///- Read ticket system setting from the config file
@@ -1614,6 +1558,11 @@ void World::LoadConfigSettings(bool reload)
     // Anti movement cheat measure. Time each client have to acknowledge a movement change until they are kicked
     m_int_configs[CONFIG_PENDING_MOVE_CHANGES_TIMEOUT] = sConfigMgr->GetIntDefault("AntiCheat.PendingMoveChangesTimeoutTime", 0);
 
+    // Queue processing configuration
+    m_int_configs[CONFIG_QUEUE_UPDATE_TIME_THRESHOLD] = sConfigMgr->GetIntDefault("Queue.Update.TimeThreshold", 100);   // 100ms default
+    m_int_configs[CONFIG_QUEUE_PLAYERS_PER_TEN_MS] = sConfigMgr->GetIntDefault("Queue.Update.PlayersPerTenMs", 1);       // 1 player per 10ms default
+    m_int_configs[CONFIG_MAP_UPDATE_TIME_THRESHOLD] = sConfigMgr->GetIntDefault("Map.Update.TimeThreshold", 150);        // 150ms default (same as MAX_DIFF_THRESHOLD)
+
     // Specifies if IP addresses can be logged to the database
     m_bool_configs[CONFIG_ALLOW_LOGGING_IP_ADDRESSES_IN_DATABASE] = sConfigMgr->GetBoolDefault("AllowLoggingIPAddressesInDatabase", true, true);
 
@@ -2265,6 +2214,8 @@ void World::SetInitialWorldSettings()
 
     m_timers[WUPDATE_CHANNEL_SAVE].SetInterval(getIntConfig(CONFIG_PRESERVE_CUSTOM_CHANNEL_INTERVAL) * MINUTE * IN_MILLISECONDS);
 
+    m_timers[WUPDATE_QUEUE_POSITIONS].SetInterval(5 * IN_MILLISECONDS); // update queue positions every 5 seconds
+
     //to set mailtimer to return mails every day between 4 and 5 am
     //mailtimer is increased when updating auctions
     //one second is 1000 -(tested on win system)
@@ -2621,6 +2572,18 @@ void World::Update(uint32 diff)
         ZoneScopedNC("World::UpdateSessions", WORLD_UPDATE_COLOR)
         TC_METRIC_TIMER("world_update_time", TC_METRIC_TAG("type", "Update sessions"));
         UpdateSessions(diff);
+    }
+
+    /// <li> Update queue positions
+    if (m_timers[WUPDATE_QUEUE_POSITIONS].Passed())
+    {
+        ZoneScopedNC("World::UpdateQueuePositions", WORLD_UPDATE_COLOR)
+        TC_METRIC_TIMER("world_update_time", TC_METRIC_TAG("type", "Update queue positions"));
+        uint32 position = 1;
+        for (auto iter = m_QueuedPlayer.begin(); iter != m_QueuedPlayer.end(); ++iter, ++position)
+            (*iter)->SendAuthWaitQueue(position);
+        
+        m_timers[WUPDATE_QUEUE_POSITIONS].Reset();
     }
 
     /// <li> Update uptime table
@@ -3283,18 +3246,19 @@ void World::UpdateSessions(uint32 diff)
 {
     {
         ZoneScopedN("AddSessions");
+
         TC_METRIC_DETAILED_NO_THRESHOLD_TIMER("world_update_time",
             TC_METRIC_TAG("type", "Add sessions"),
             TC_METRIC_TAG("parent_type", "Update sessions"));
-        ///- Add new sessions
+
         WorldSession* sess = nullptr;
         while (addSessQueue.next(sess))
             AddSession_(sess);
     }
 
-    ///- Then send an update signal to remaining ones
     {
         ZoneScopedN("PacketUpdates");
+
         uint64_t start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         std::map<uint32, uint32> opcode_map;
         for (SessionMap::iterator itr = m_sessions.begin(), next; itr != m_sessions.end(); itr = next)
@@ -3309,17 +3273,20 @@ void World::UpdateSessions(uint32 diff)
             [[maybe_unused]] uint32 currentSessionId = itr->first;
             TC_METRIC_DETAILED_TIMER("world_update_sessions_time", TC_METRIC_TAG("account_id", std::to_string(currentSessionId)));
 
-
+            // update returns false when socket is null
             if (!pSession->Update(diff, updater, opcode_map))    // As interval = 0
             {
-                if (!RemoveQueuedPlayer(itr->second) && itr->second && getIntConfig(CONFIG_INTERVAL_DISCONNECT_TOLERANCE))
+                // check if player was NOT in the queue when they disconnected
+                if (!RemoveQueuedPlayer(pSession) && itr->second && getIntConfig(CONFIG_INTERVAL_DISCONNECT_TOLERANCE))
                     m_disconnects[itr->second->GetAccountId()] = GameTime::GetGameTime();
-                RemoveQueuedPlayer(pSession);
+                
                 m_sessions.erase(itr);
+
                 delete pSession;
 
             }
         }
+
         uint64_t end = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         if (end - start > 250)
         {
@@ -3338,6 +3305,42 @@ void World::UpdateSessions(uint32 diff)
             }
             std::string str = ss.str();
             TracyMessage(str.c_str(), str.size());
+        }
+
+        // Process queued players if update time is below threshold
+        // Maintain rolling average of last 10 update times
+        m_recentUpdateTimes.push_back(diff);
+        if (m_recentUpdateTimes.size() > 10)
+            m_recentUpdateTimes.pop_front();
+        
+        // Calculate average update time
+        uint32 totalTime = 0;
+        for (uint32 time : m_recentUpdateTimes)
+            totalTime += time;
+        uint32 avgUpdateTime = totalTime / m_recentUpdateTimes.size();
+        
+        uint32 timeThreshold = getIntConfig(CONFIG_QUEUE_UPDATE_TIME_THRESHOLD);
+        if (avgUpdateTime < timeThreshold && !m_QueuedPlayer.empty())
+        {
+            uint32 playersPerTenMs = getIntConfig(CONFIG_QUEUE_PLAYERS_PER_TEN_MS);
+            uint32 maxPlayersToProcess = 1 + (timeThreshold - avgUpdateTime) / 10 * playersPerTenMs;
+            uint32 processedPlayers = 0;
+            
+            while (!m_QueuedPlayer.empty() && processedPlayers < maxPlayersToProcess)
+            {
+                // Check player limit
+                uint32 sessions = GetActiveSessionCount();
+                if (m_playerLimit && sessions >= m_playerLimit)
+                    break;
+                
+                WorldSession* session = m_QueuedPlayer.front();
+                m_QueuedPlayer.pop_front();
+                
+                session->InitializeSession();
+                UpdateMaxSessionCounters();
+                
+                ++processedPlayers;
+            }
         }
     }
 }

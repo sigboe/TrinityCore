@@ -1416,6 +1416,9 @@ void Player::Update(uint32 p_time)
         return;
     }
 
+    if (m_lastTickTime - m_lastNotifiedTime < 500)
+        return;
+
     // Player must move some consequential distance to need notify
     if (!isNeedNotify(NOTIFY_VISIBILITY_CHANGED))
     {

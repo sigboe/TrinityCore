@@ -36,6 +36,7 @@
 #include "Transaction.h"
 #include "UniqueTrackablePtr.h"
 #include <bitset>
+#include <deque>
 #include <list>
 #include <memory>
 #include <mutex>
@@ -770,6 +771,7 @@ class TC_GAME_API Map : public GridRefManager<NGridType>
         int32 m_VisibilityNotifyPeriod;
         int32 m_VisibilityNotifyPeriodMax;
         int32 m_VisibilityNotifyPeriodMin;
+        std::deque<uint32> m_recentUpdateTimes;  // Rolling window for update time averaging
         DynamicMapTree _dynamicTree;
 
         MapRefManager m_mapRefManager;

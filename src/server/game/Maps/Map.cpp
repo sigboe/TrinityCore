@@ -74,7 +74,6 @@ static uint16 const holetab_v[4] = { 0x000F, 0x00F0, 0x0F00, 0xF000 };
 
 #define MAX_GRID_LOAD_TIME      50
 #define MAX_CREATURE_ATTACK_RADIUS  (45.0f * sWorld->getRate(RATE_CREATURE_AGGRO))
-#define MAX_DIFF_THRESHOLD 150
 
 ZoneDynamicInfo::ZoneDynamicInfo() : MusicId(0), DefaultWeather(nullptr), WeatherId(WEATHER_STATE_FINE),
     Intensity(0.0f) { }
@@ -783,13 +782,25 @@ void Map::UpdatePlayerZoneStats(uint32 oldZone, uint32 newZone)
 // @tswow-begin tracy
 void Map::Update(uint32 t_diff)
 {
-    // Dynamically adjust notifies based on diff
-    if (t_diff > MAX_DIFF_THRESHOLD) {
+    // Dynamically adjust notifies based on rolling average of diff
+    // Maintain rolling average of last 10 update times
+    m_recentUpdateTimes.push_back(t_diff);
+    if (m_recentUpdateTimes.size() > 10)
+        m_recentUpdateTimes.pop_front();
+    
+    // Calculate average update time
+    uint32 totalTime = 0;
+    for (uint32 time : m_recentUpdateTimes)
+        totalTime += time;
+    uint32 avgUpdateTime = totalTime / m_recentUpdateTimes.size();
+    
+    uint32 timeThreshold = sWorld->getIntConfig(CONFIG_MAP_UPDATE_TIME_THRESHOLD);
+    if (avgUpdateTime > timeThreshold) {
         m_VisibleDistance = std::max(m_VisibleDistance - 1.0f, m_VisibleDistanceMin);
-        m_VisibilityNotifyPeriod = std::min(m_VisibilityNotifyPeriod + 1, m_VisibilityNotifyPeriodMax);
+        m_VisibilityNotifyPeriod = std::min(m_VisibilityNotifyPeriod + 10, m_VisibilityNotifyPeriodMax);
     } else {
         m_VisibleDistance = std::min(m_VisibleDistance + 1.0f, m_VisibleDistanceMax);
-        m_VisibilityNotifyPeriod = std::max(m_VisibilityNotifyPeriod - 1, m_VisibilityNotifyPeriodMin);
+        m_VisibilityNotifyPeriod = std::max(m_VisibilityNotifyPeriod - 10, m_VisibilityNotifyPeriodMin);
     }
 
     // @tswow-begin tswow-events

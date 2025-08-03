@@ -1115,6 +1115,9 @@ void Creature::Update(uint32 diff)
     if (!GetMap()->HavePlayers())
         return;
 
+    if (m_lastTickTime - m_lastNotifiedTime < 500)
+        return;
+
     // Creature must move some consequential distance to need notify
     if (!isNeedNotify(NOTIFY_VISIBILITY_CHANGED))
     {
