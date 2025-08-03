@@ -276,21 +276,23 @@ ConnectionLimit = 0
 #
 #    Queue.Update.TimeThreshold
 #        Description: Time threshold in milliseconds for queue processing.
-#                     The server will only process queued players if the session update time
+#                     The server will only process queued players if the average world diff
 #                     is below this threshold, preventing performance degradation during high load.
 #        Default:     100 - (100 milliseconds)
+#                     0   - Pause players from entering game, queue will not be processed
 
 Queue.Update.TimeThreshold = 100
 
 #
 #    Queue.Update.PlayersPerTenMs
-#        Description: Number of players to initialize per 10ms of available processing time.
+#        Description: Number of ADDITIONAL players to initialize per 10ms of available processing time.
 #                     For example, if TimeThreshold is 100ms and session updates took 30ms,
-#                     there are 70ms available. With this set to 1, up to 7 players would be
-#                     processed from the queue (70ms / 10ms * 1 player = 7 players).
-#        Default:     1 - (1 player per 10ms)
+#                     there are 70ms available. With this set to 1, up to 8 players would be
+#                     processed from the queue 1 + (70ms / 10ms * 1 player = 8 players).
+#        Default:     0 - (1 player allowed when average diff < threshold)
+#                     X - (X additional players per 10ms)
 
-Queue.Update.PlayersPerTenMs = 1
+Queue.Update.PlayersPerTenMs = 0
 
 #
 #    Queue.Position.UpdateInterval
@@ -310,6 +312,15 @@ Queue.Position.UpdateInterval = 5
 #        Default:     150 - (150 milliseconds)
 
 Map.Update.TimeThreshold = 150
+
+#
+#    Map.Update.MaxRespawn
+#        Description: Respawning creatures and particularly adding them to a map is an expensive operation.
+#                     This setting limits the number of respawns that can be processed in a single map update.
+#        Default:     2 - (Count)
+#                     0 - (Disabled)
+
+Map.Update.MaxRespawn = 2
 
 #
 #    MaxOverspeedPings
@@ -4548,14 +4559,6 @@ AlwaysUpdateWaypointCreatures = 1
 
 HideGameObjectSparkle = 1
 
-#
-#    MaxRespawnCountOnUpdate
-#       Description: Respawning creatures and particularly adding them to a map is a expensive operation.
-#                    This setting limits the number of respawns that can be processed in a single update.
-#       Default:     2 - (Count)
-#                    0 - (Disabled)
-
-MaxRespawnCountOnUpdate = 2
 
 #
 #    MuteDefaultGuildBroadcasts
