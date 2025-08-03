@@ -293,6 +293,15 @@ Queue.Update.TimeThreshold = 100
 Queue.Update.PlayersPerTenMs = 1
 
 #
+#    Queue.Position.UpdateInterval
+#        Description: How often to update queue position messages to players in seconds.
+#                     This controls how frequently players in the queue receive position updates
+#                     showing their current place in line.
+#        Default:     5 - (5 seconds)
+
+Queue.Position.UpdateInterval = 5
+
+#
 #    Map.Update.TimeThreshold
 #        Description: Time threshold in milliseconds for map update performance adjustment.
 #                     When map update times exceed this threshold, the server will incrementally

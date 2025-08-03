@@ -1562,6 +1562,7 @@ void World::LoadConfigSettings(bool reload)
     // Queue processing configuration
     m_int_configs[CONFIG_QUEUE_UPDATE_TIME_THRESHOLD] = sConfigMgr->GetIntDefault("Queue.Update.TimeThreshold", 100);   // 100ms default
     m_int_configs[CONFIG_QUEUE_PLAYERS_PER_TEN_MS] = sConfigMgr->GetIntDefault("Queue.Update.PlayersPerTenMs", 1);       // 1 player per 10ms default
+    m_int_configs[CONFIG_QUEUE_POSITION_UPDATE_INTERVAL] = sConfigMgr->GetIntDefault("Queue.Position.UpdateInterval", 5); // 5 seconds default
     m_int_configs[CONFIG_MAP_UPDATE_TIME_THRESHOLD] = sConfigMgr->GetIntDefault("Map.Update.TimeThreshold", 150);        // 150ms default (same as MAX_DIFF_THRESHOLD)
 
     // Specifies if IP addresses can be logged to the database
@@ -2215,7 +2216,7 @@ void World::SetInitialWorldSettings()
 
     m_timers[WUPDATE_CHANNEL_SAVE].SetInterval(getIntConfig(CONFIG_PRESERVE_CUSTOM_CHANNEL_INTERVAL) * MINUTE * IN_MILLISECONDS);
 
-    m_timers[WUPDATE_QUEUE_POSITIONS].SetInterval(5 * IN_MILLISECONDS); // update queue positions every 5 seconds
+    m_timers[WUPDATE_QUEUE_POSITIONS].SetInterval(getIntConfig(CONFIG_QUEUE_POSITION_UPDATE_INTERVAL) * IN_MILLISECONDS); // configurable queue position update interval
 
     //to set mailtimer to return mails every day between 4 and 5 am
     //mailtimer is increased when updating auctions
