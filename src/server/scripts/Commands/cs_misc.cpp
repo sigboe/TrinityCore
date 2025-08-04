@@ -2692,7 +2692,7 @@ public:
             std::sort(entries.begin(), entries.end(),
                       [](CountEntry const& a, CountEntry const& b)
                       {
-                          return a.count > b.count;
+                          return a.totalTime > b.totalTime;
                       });
             handler->SendSysMessage("Count     | Total Time | Query");
             for (size_t i = 0; i < std::min(entries.size(), shown.value_or(10)); ++i)
