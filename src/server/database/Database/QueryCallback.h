@@ -25,12 +25,19 @@
 #include <list>
 #include <queue>
 #include <utility>
+#include <string>
+#include <memory>
 
+struct QueryCallbackLogData {
+    std::string query;
+    uint64 createTime;
+};
+TC_DATABASE_API std::unordered_map<uint64, QueryCallbackLogData> GetAsyncLogData();
 class TC_DATABASE_API QueryCallback
 {
 public:
-    explicit QueryCallback(QueryResultFuture&& result);
-    explicit QueryCallback(PreparedQueryResultFuture&& result);
+    explicit QueryCallback(QueryResultFuture&& result, std::string query);
+    explicit QueryCallback(PreparedQueryResultFuture&& result, std::string query);
     QueryCallback(QueryCallback&& right);
     QueryCallback& operator=(QueryCallback&& right);
     ~QueryCallback();
@@ -48,6 +55,7 @@ public:
     bool InvokeIfReady();
 
 private:
+    uint64 logEntryNo;
     QueryCallback(QueryCallback const& right) = delete;
     QueryCallback& operator=(QueryCallback const& right) = delete;
 
