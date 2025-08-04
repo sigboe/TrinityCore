@@ -53,6 +53,7 @@
 #include "World.h"
 #include "WorldSession.h"
 #include "QueryCallback.h"
+#include "AsyncLog.h"
 #include <unordered_map>
 
 // temporary hack until includes are sorted out (don't want to pull in Windows.h)
@@ -2671,7 +2672,7 @@ public:
         return true;
     }
 
-    static bool HandleAsyncLogCommand(ChatHandler* handler, Optional<size_t> shown) {
+    static bool HandleAsyncLogCommand(ChatHandler* handler, Optional<size_t> shown, Optional<size_t> length) {
         uint64 now = static_cast<uint64>(std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch())
             .count());
@@ -2698,7 +2699,7 @@ public:
             {
                 std::string str =
                     fmt::format("{:<10} | {:<10} | {}", entries[i].count, entries[i].totalTime,
-                                entries[i].name);
+                                entries[i].name.substr(0, std::min(entries[i].name.size(), static_cast<size_t>(length.value_or(100)))));
                 handler->SendSysMessage(str);
             }
         };
