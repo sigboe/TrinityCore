@@ -2691,15 +2691,14 @@ public:
             std::sort(entries.begin(), entries.end(),
                       [](CountEntry const& a, CountEntry const& b)
                       {
-                          return a.count > b.count ? 1 : -1;
-                          1;
+                          return a.count > b.count;
                       });
             handler->SendSysMessage("Count     | Total Time | Query");
             for (size_t i = 0; i < std::min(entries.size(), shown.value_or(10)); ++i)
             {
                 std::string str =
                     fmt::format("{:<10} | {:<10} | {}", entries[i].count, entries[i].totalTime,
-                                entries[i].name.substr(0, std::min(entries[i].name.size(), static_cast<size_t>(10))));
+                                entries[i].name.substr(0, std::min(entries[i].name.size(), static_cast<size_t>(100))));
                 handler->SendSysMessage(str);
             }
         };
