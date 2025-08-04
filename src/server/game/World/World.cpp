@@ -3328,14 +3328,9 @@ void World::UpdateSessions(uint32 diff)
             
             while (!m_QueuedPlayer.empty() && processedPlayers < maxPlayersToProcess)
             {
-                // Check player limit
-                uint32 sessions = GetActiveSessionCount();
-                if (m_playerLimit && sessions >= m_playerLimit)
-                    break;
-                
                 WorldSession* session = m_QueuedPlayer.front();
                 m_QueuedPlayer.pop_front();
-                
+
                 session->InitializeSession();
                 UpdateMaxSessionCounters();
                 
