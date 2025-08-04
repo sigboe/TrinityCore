@@ -393,8 +393,7 @@ void InitializeDatabaseFieldMetadata(QueryResultFieldMetadata* meta, MySQLField 
 }
 }
 
-ResultSet::ResultSet(MySQLResult* result, MySQLField* fields, uint64 rowCount, uint32 fieldCount, std::string query) :
-_query(query),
+ResultSet::ResultSet(MySQLResult* result, MySQLField* fields, uint64 rowCount, uint32 fieldCount) :
 _rowCount(rowCount),
 _fieldCount(fieldCount),
 _result(result),
@@ -409,8 +408,7 @@ _fields(fields)
     }
 }
 
-PreparedResultSet::PreparedResultSet(MySQLStmt* stmt, MySQLResult* result, uint64 rowCount, uint32 fieldCount, std::string query) :
-m_query(query),
+PreparedResultSet::PreparedResultSet(MySQLStmt* stmt, MySQLResult* result, uint64 rowCount, uint32 fieldCount) :
 m_rowCount(rowCount),
 m_rowPosition(0),
 m_fieldCount(fieldCount),

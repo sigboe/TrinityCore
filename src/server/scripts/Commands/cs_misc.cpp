@@ -15,7 +15,6 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "Define.h"
 #include "ScriptMgr.h"
 #include "AccountMgr.h"
 #include "ArenaTeamMgr.h"
@@ -52,8 +51,6 @@
 #include "WeatherMgr.h"
 #include "World.h"
 #include "WorldSession.h"
-#include "QueryCallback.h"
-#include <unordered_map>
 
 // temporary hack until includes are sorted out (don't want to pull in Windows.h)
 #ifdef GetClassName
@@ -128,8 +125,6 @@ public:
             { "unstuck",          HandleUnstuckCommand,          rbac::RBAC_PERM_COMMAND_UNSTUCK,          Console::Yes },
             { "wchange",          HandleChangeWeather,           rbac::RBAC_PERM_COMMAND_WCHANGE,          Console::No },
             { "mailbox",          HandleMailBoxCommand,          rbac::RBAC_PERM_COMMAND_MAILBOX,          Console::No },
-            { "async_log",        HandleAsyncLogCommand,         rbac::RBAC_PERM_COMMAND_ASYNC_LOG,        Console::Yes },
-            { "choke_db",         HandleChokeDBCommand,          rbac::RBAC_PERM_COMMAND_CHOKE_DB,         Console::Yes },
         };
         return commandTable;
     }
@@ -2669,95 +2664,6 @@ public:
 
         handler->GetSession()->SendShowMailBox(player->GetGUID());
         return true;
-    }
-
-    static bool HandleAsyncLogCommand(ChatHandler* handler, Optional<size_t> shown) {
-        uint64 now = static_cast<uint64>(std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now().time_since_epoch())
-            .count());
-
-        std::unordered_map<uint64, QueryCallbackLogData> logData = GetAsyncLogData();
-
-        struct CountEntry
-        {
-            std::string name;
-            uint64 count;
-            uint64 totalTime;
-        };
-        std::unordered_map<std::string, CountEntry> countMap;
-        for (auto const& [key, entry] : logData)
-        {
-            CountEntry& countEntry = countMap[entry.query];
-            countEntry.name = entry.query;
-            countEntry.count++;
-            countEntry.totalTime += now - entry.createTime;
-        }
-
-        std::vector<CountEntry> countVec;
-        for (auto const& [key, entry] : countMap)
-        {
-            countVec.push_back(entry);
-        }
-        std::sort(countVec.begin(), countVec.end(),
-                  [](CountEntry const& a, CountEntry const& b)
-                  {
-                      return a.count > b.count ? 1 : -1;
-                      1;
-                  });
-
-        handler->SendSysMessage("Count     | Total Time | Query");
-        for (size_t i = 0; i < std::min(countVec.size(), shown.value_or(10)); ++i)
-        {
-            std::string str = fmt::format("{:<10} | {:<10} | {}", countVec[i].count, countVec[i].totalTime,
-                                          countVec[i].name.substr(0, std::min(countVec[i].name.size(), static_cast<size_t>(10))));
-            handler->SendSysMessage(str);
-        }
-
-        return true;
-    }
-
-    static bool HandleChokeDBCommand(ChatHandler* handler, std::string dbName, Optional<uint32> amount, Optional<uint32> queries) {
-        auto Query =
-            [&](auto& db)
-        {
-            uint32 amountV    = amount.value_or(100000000);
-            uint32 queriesV   = queries.value_or(1);
-            std::string query = fmt::format("SELECT BENCHMARK({}, SHA2('Hi', 256));", amountV);
-            for (size_t i = 0; i < queriesV; ++i)
-            {
-                db.AsyncQuery(query.c_str());
-            }
-
-            std::string playerName = [&]() -> std::string
-            {
-                if (Player* player = handler->GetPlayer())
-                {
-                    return player->GetName();
-                }
-                else
-                {
-                    return "console";
-                }
-            }();
-            std::string message =
-                fmt::format("Choking {} db for {} iterations of SHA256 with {} queries (by {})", dbName, amountV, queriesV, playerName);
-            handler->SendSysMessage(message);
-            TC_LOG_INFO("choke_db", "{}", message);
-        };
-        if (dbName == "auth" || dbName == "login") {
-            Query(LoginDatabase);
-            return true;
-        }
-        else if (dbName == "characters" || dbName == "character") {
-            Query(CharacterDatabase);
-            return true;
-        }
-        else if (dbName == "world") {
-            Query(WorldDatabase);
-            return true;
-        }
-
-        return false;
     }
 };
 

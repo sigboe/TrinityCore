@@ -327,7 +327,7 @@ ResultSet* MySQLConnection::Query(char const* sql)
     if (!_Query(sql, &result, &fields, &rowCount, &fieldCount))
         return nullptr;
 
-    return new ResultSet(result, fields, rowCount, fieldCount, sql);
+    return new ResultSet(result, fields, rowCount, fieldCount);
 }
 
 bool MySQLConnection::_Query(const char* sql, MySQLResult** pResult, MySQLField** pFields, uint64* pRowCount, uint32* pFieldCount)
@@ -525,7 +525,7 @@ PreparedResultSet* MySQLConnection::Query(PreparedStatementBase* stmt)
     {
         mysql_next_result(m_Mysql);
     }
-    return new PreparedResultSet(mysqlStmt->GetSTMT(), result, rowCount, fieldCount, stmt->GetName());
+    return new PreparedResultSet(mysqlStmt->GetSTMT(), result, rowCount, fieldCount);
 }
 
 bool MySQLConnection::_HandleMySQLErrno(uint32 errNo, uint8 attempts /*= 5*/, const char* sql /*= nullptr*/)
@@ -695,6 +695,6 @@ PreparedResultSet* MySQLConnection::QueryCustomStatement(uint32 id, PreparedStat
     {
         mysql_next_result(m_Mysql);
     }
-    return new PreparedResultSet(stmnt->GetSTMT(), result, rowCount, fieldCount, values->GetName());
+    return new PreparedResultSet(stmnt->GetSTMT(), result, rowCount, fieldCount);
 }
 // @tswow-end

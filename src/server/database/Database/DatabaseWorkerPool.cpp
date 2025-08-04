@@ -158,9 +158,6 @@ bool DatabaseWorkerPool<T>::PrepareStatements()
             if (_preparedStatementSize.size() < preparedSize)
                 _preparedStatementSize.resize(preparedSize);
 
-            if (_preparedStatementNames.size() < preparedSize)
-                _preparedStatementNames.resize(preparedSize);
-
             for (size_t i = 0; i < preparedSize; ++i)
             {
                 // already set by another connection
@@ -176,7 +173,6 @@ bool DatabaseWorkerPool<T>::PrepareStatements()
                     ASSERT(paramCount < std::numeric_limits<uint8>::max());
 
                     _preparedStatementSize[i] = static_cast<uint8>(paramCount);
-                    _preparedStatementNames[i] = stmt->GetQueryString();
                 }
             }
         }
@@ -228,7 +224,7 @@ QueryCallback DatabaseWorkerPool<T>::AsyncQuery(char const* sql)
     // Store future result before enqueueing - task might get already processed and deleted before returning from this method
     QueryResultFuture result = task->GetFuture();
     Enqueue(task);
-    return QueryCallback(std::move(result), sql);
+    return QueryCallback(std::move(result));
 }
 
 template <class T>
@@ -238,7 +234,7 @@ QueryCallback DatabaseWorkerPool<T>::AsyncQuery(PreparedStatement<T>* stmt)
     // Store future result before enqueueing - task might get already processed and deleted before returning from this method
     PreparedQueryResultFuture result = task->GetFuture();
     Enqueue(task);
-    return QueryCallback(std::move(result), stmt->GetName());
+    return QueryCallback(std::move(result));
 }
 
 template <class T>
@@ -339,7 +335,7 @@ void DatabaseWorkerPool<T>::DirectCommitTransaction(SQLTransaction<T>& transacti
 template <class T>
 PreparedStatement<T>* DatabaseWorkerPool<T>::GetPreparedStatement(PreparedStatementIndex index)
 {
-    return new PreparedStatement<T>(index, _preparedStatementSize[index], _preparedStatementNames[index]);
+    return new PreparedStatement<T>(index, _preparedStatementSize[index]);
 }
 
 template <class T>

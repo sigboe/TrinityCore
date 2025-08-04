@@ -24,8 +24,6 @@
 #include <future>
 #include <vector>
 #include <variant>
-#include <string>
-#include <utility>
 
 struct PreparedStatementData
 {
@@ -65,7 +63,7 @@ class TC_DATABASE_API PreparedStatementBase
     friend class PreparedStatementTask;
 
     public:
-        explicit PreparedStatementBase(uint32 index, uint8 capacity, std::string name);
+        explicit PreparedStatementBase(uint32 index, uint8 capacity);
         virtual ~PreparedStatementBase();
 
         void setNull(uint8 index);
@@ -93,10 +91,9 @@ class TC_DATABASE_API PreparedStatementBase
 
         uint32 GetIndex() const { return m_index; }
         std::vector<PreparedStatementData> const& GetParameters() const { return statement_data; }
-        std::string GetName() const { return m_name; }
+
     protected:
         uint32 m_index;
-        std::string m_name;
 
         //- Buffer of parameters, not tied to MySQL in any way yet
         std::vector<PreparedStatementData> statement_data;
@@ -109,7 +106,7 @@ template<typename T>
 class PreparedStatement : public PreparedStatementBase
 {
 public:
-    explicit PreparedStatement(uint32 index, uint8 capacity, std::string name) : PreparedStatementBase(index, capacity, std::move(name))
+    explicit PreparedStatement(uint32 index, uint8 capacity) : PreparedStatementBase(index, capacity)
     {
     }
 
