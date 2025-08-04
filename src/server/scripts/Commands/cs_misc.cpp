@@ -2698,7 +2698,7 @@ public:
             {
                 std::string str =
                     fmt::format("{:<10} | {:<10} | {}", entries[i].count, entries[i].totalTime,
-                                entries[i].name.substr(0, std::min(entries[i].name.size(), static_cast<size_t>(100))));
+                                entries[i].name);
                 handler->SendSysMessage(str);
             }
         };
