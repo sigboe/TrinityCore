@@ -3001,7 +3001,7 @@ BanReturn World::BanAccount(BanMode mode, std::string const& nameOrIP, uint32 du
     }
 
     ///- Disconnect all affected players (for IP it can be several)
-    LoginDatabaseTransaction trans = LoginDatabase.BeginTransaction();
+    LoginDatabaseTransaction trans = LoginDatabase.BeginTransaction("World::BanAccount");
     do
     {
         Field* fieldsAccount = resultAccounts->Fetch();
@@ -3081,7 +3081,7 @@ BanReturn World::BanCharacter(std::string const& name, std::string const& durati
     else
         guid = banned->GetGUID().GetCounter();
     //Use transaction in order to ensure the order of the queries
-    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
+    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction("World::BanCharacter");
     // make sure there is only one active ban
     CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_CHARACTER_BAN);
     stmt->setUInt32(0, guid);
@@ -3431,7 +3431,7 @@ void World::_UpdateRealmCharCount(PreparedQueryResult resultCharCount)
         uint32 accountId = fields[0].GetUInt32();
         uint8 charCount = uint8(fields[1].GetUInt64());
 
-        LoginDatabaseTransaction trans = LoginDatabase.BeginTransaction();
+        LoginDatabaseTransaction trans = LoginDatabase.BeginTransaction("World::_UpdateRealmCharCount");
 
         LoginDatabasePreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_REP_REALM_CHARACTERS);
         stmt->setUInt8(0, charCount);

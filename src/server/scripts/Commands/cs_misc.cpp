@@ -2676,14 +2676,34 @@ public:
             std::chrono::system_clock::now().time_since_epoch())
             .count());
 
-        std::unordered_map<uint64, QueryCallbackLogData> logData = GetAsyncLogData();
+        std::unordered_map<uint64, AsyncLogData> logData = GetAsyncLogData();
 
+        size_t totalCount = 0;
+        size_t totalTime = 0;
         struct CountEntry
         {
             std::string name;
             uint64 count;
             uint64 totalTime;
         };
+
+        auto PrintCountEntries = [&](std::vector<CountEntry>& entries) {
+            std::sort(entries.begin(), entries.end(),
+                      [](CountEntry const& a, CountEntry const& b)
+                      {
+                          return a.count > b.count ? 1 : -1;
+                          1;
+                      });
+            handler->SendSysMessage("Count     | Total Time | Query");
+            for (size_t i = 0; i < std::min(entries.size(), shown.value_or(10)); ++i)
+            {
+                std::string str =
+                    fmt::format("{:<10} | {:<10} | {}", entries[i].count, entries[i].totalTime,
+                                entries[i].name.substr(0, std::min(entries[i].name.size(), static_cast<size_t>(10))));
+                handler->SendSysMessage(str);
+            }
+        };
+
         std::unordered_map<std::string, CountEntry> countMap;
         for (auto const& [key, entry] : logData)
         {
@@ -2691,6 +2711,8 @@ public:
             countEntry.name = entry.query;
             countEntry.count++;
             countEntry.totalTime += now - entry.createTime;
+            totalCount++;
+            totalTime += now - entry.createTime;
         }
 
         std::vector<CountEntry> countVec;
@@ -2698,20 +2720,21 @@ public:
         {
             countVec.push_back(entry);
         }
-        std::sort(countVec.begin(), countVec.end(),
-                  [](CountEntry const& a, CountEntry const& b)
-                  {
-                      return a.count > b.count ? 1 : -1;
-                      1;
-                  });
+        handler->SendSysMessage(fmt::format("Current"));
+        handler->SendSysMessage(fmt::format("Current Total Count: {}, current total time: {}", totalCount, totalTime));
+        PrintCountEntries(countVec);
 
-        handler->SendSysMessage("Count     | Total Time | Query");
-        for (size_t i = 0; i < std::min(countVec.size(), shown.value_or(10)); ++i)
+        std::unordered_map<std::string, AsyncLogTotals> logTotals = GetAsyncLogTotals();
+        std::vector<CountEntry> totalCountVec;
+        size_t totalQueries = 0;
+        for (auto const& [key, entry] : logTotals)
         {
-            std::string str = fmt::format("{:<10} | {:<10} | {}", countVec[i].count, countVec[i].totalTime,
-                                          countVec[i].name.substr(0, std::min(countVec[i].name.size(), static_cast<size_t>(10))));
-            handler->SendSysMessage(str);
+            totalQueries += entry.Count;
+            totalCountVec.push_back(CountEntry{key, entry.Count, entry.Time});
         }
+        handler->SendSysMessage(fmt::format("Total"));
+        handler->SendSysMessage(fmt::format("Total Count: {}", totalQueries));
+        PrintCountEntries(totalCountVec);
 
         return true;
     }

@@ -37,6 +37,7 @@
 #include <sstream>
 #include <boost/stacktrace.hpp>
 #endif
+#include <chrono>
 
 #define MIN_MYSQL_SERVER_VERSION 50700u
 #define MIN_MYSQL_SERVER_VERSION_STRING "5.7"
@@ -205,12 +206,15 @@ QueryResult DatabaseWorkerPool<T>::Query(char const* sql, T* connection /*= null
 template <class T>
 PreparedQueryResult DatabaseWorkerPool<T>::Query(PreparedStatement<T>* stmt)
 {
+    std::string name = stmt ? stmt->GetName() : "unknown";
+
     auto connection = GetFreeConnection();
     PreparedResultSet* ret = connection->Query(stmt);
     connection->Unlock();
 
     //! Delete proxy-class. Not needed anymore
     delete stmt;
+
 
     if (!ret || !ret->GetRowCount())
     {
@@ -253,9 +257,9 @@ SQLQueryHolderCallback DatabaseWorkerPool<T>::DelayQueryHolder(std::shared_ptr<S
 }
 
 template <class T>
-SQLTransaction<T> DatabaseWorkerPool<T>::BeginTransaction()
+SQLTransaction<T> DatabaseWorkerPool<T>::BeginTransaction(std::string const& name)
 {
-    return std::make_shared<Transaction<T>>();
+    return std::make_shared<Transaction<T>>(name);
 }
 
 template <class T>
@@ -284,6 +288,7 @@ void DatabaseWorkerPool<T>::CommitTransaction(SQLTransaction<T> transaction)
 template <class T>
 TransactionCallback DatabaseWorkerPool<T>::AsyncCommitTransaction(SQLTransaction<T> transaction)
 {
+    std::string name                = transaction ? transaction->GetName() : "unknown";
 #ifdef TRINITY_DEBUG
     //! Only analyze transaction weaknesses in Debug mode.
     //! Ideally we catch the faults in Debug mode and then correct them,
@@ -304,7 +309,7 @@ TransactionCallback DatabaseWorkerPool<T>::AsyncCommitTransaction(SQLTransaction
     TransactionWithResultTask* task = new TransactionWithResultTask(transaction);
     TransactionFuture result = task->GetFuture();
     Enqueue(task);
-    return TransactionCallback(std::move(result));
+    return TransactionCallback(std::move(result), name);
 }
 
 template <class T>

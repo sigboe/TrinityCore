@@ -28,11 +28,6 @@
 #include <string>
 #include <memory>
 
-struct QueryCallbackLogData {
-    std::string query;
-    uint64 createTime;
-};
-TC_DATABASE_API std::unordered_map<uint64, QueryCallbackLogData> GetAsyncLogData();
 class TC_DATABASE_API QueryCallback
 {
 public:

@@ -2890,7 +2890,7 @@ void Player::GiveLevel(uint8 level)
     if (MailLevelReward const* mailReward = sObjectMgr->GetMailLevelReward(level, GetRaceMask()))
     {
         /// @todo Poor design of mail system
-        CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
+        CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction("Player::GiveLevel");
         MailDraft(mailReward->mailTemplateId).SendMailTo(trans, this, MailSender(MAIL_CREATURE, mailReward->senderEntry));
         CharacterDatabase.CommitTransaction(trans);
     }
@@ -4212,7 +4212,7 @@ bool Player::ResetTalents(bool involuntarily /*= false*/)
         }
     }
 
-    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
+    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction("Player::_LoadFromDB_ResetTalents");
     _SaveTalents(trans);
     _SaveSpells(trans);
     CharacterDatabase.CommitTransaction(trans);
@@ -4366,7 +4366,7 @@ void Player::DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRe
             charDelete_method = CHAR_DELETE_REMOVE;
     }
 
-    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
+    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction("Player::DeleteFromDB");
     if (ObjectGuid::LowType guildId = sCharacterCache->GetCharacterGuildIdByGuid(playerguid))
         if (Guild* guild = sGuildMgr->GetGuildById(guildId))
             guild->DeleteMember(trans, playerguid, false, false);
@@ -15886,7 +15886,7 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver, 
     if (uint32 mail_template_id = quest->GetRewMailTemplateId())
     {
         /// @todo Poor design of mail system
-        CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
+        CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction("Player::RewardQuest");
         if (uint32 questMailSender = quest->GetRewMailSenderEntry())
             MailDraft(mail_template_id).SendMailTo(trans, this, questMailSender, MAIL_CHECK_MASK_HAS_BODY, quest->GetRewMailDelaySecs());
         else
@@ -18808,7 +18808,7 @@ void Player::_LoadInventory(PreparedQueryResult result, uint32 timeDiff)
         std::map<ObjectGuid::LowType, Bag*> bagMap;                  // fast guid lookup for bags
         std::map<ObjectGuid::LowType, Item*> invalidBagMap;          // fast guid lookup for bags
         std::list<Item*> problematicItems;
-        CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
+        CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction("Player::_LoadInventory");
 
         // Prevent items from being added to the queue while loading
         m_itemUpdateQueueBlocked = true;
@@ -19066,7 +19066,7 @@ Item* Player::_LoadMailedItem(ObjectGuid const& playerGuid, Player* player, uint
         TC_LOG_ERROR("entities.player", "Player '{}' ({}) has unknown item in mailed items (GUID: {}, Entry: {}) in mail ({}), deleted.",
             player ? player->GetName() : "<unknown>", playerGuid.ToString(), itemGuid, itemEntry, mailId);
 
-        CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
+        CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction("Player::_LoadMailedItem");
 
         CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_INVALID_MAIL_ITEM);
         stmt->setUInt32(0, itemGuid);
@@ -19966,7 +19966,7 @@ bool Player::_LoadHomeBind(PreparedQueryResult result)
 
 void Player::SaveToDB(bool create /*=false*/)
 {
-    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
+    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction("Player::SaveToDB");
 
     SaveToDB(trans, create);
 
@@ -20635,7 +20635,7 @@ void Player::_SaveQuestStatus(CharacterDatabaseTransaction trans)
 {
     bool isTransaction = bool(trans);
     if (!isTransaction)
-        trans = CharacterDatabase.BeginTransaction();
+        trans = CharacterDatabase.BeginTransaction("Player::_SaveQuestStatus");
 
     QuestStatusSaveMap::iterator saveItr;
     QuestStatusMap::iterator statusItr;
@@ -24482,7 +24482,7 @@ void Player::AutoUnequipOffhandIfNeed(bool force /*= false*/)
         offItem->transmog = transmog;
         // @tswow-end
 
-        CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
+        CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction("Player::AutoUnequipOffhandIfNeed");
         offItem->DeleteFromInventoryDB(trans);                   // deletes item from character's inventory
         offItem->SaveToDB(trans);                                // recursive and not have transaction guard into self, item not in inventory and can be save standalone
 
@@ -26919,7 +26919,7 @@ void Player::UpdateSpecCount(uint8 count)
     if (m_activeSpec >= count)
         ActivateSpec(0);
 
-    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
+    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction("Player::UpdateSpecCount");
     CharacterDatabasePreparedStatement* stmt;
 
     // Copy spec data
@@ -26968,7 +26968,7 @@ void Player::ActivateSpec(uint8 spec)
     if (IsNonMeleeSpellCast(false))
         InterruptNonMeleeSpells(false);
 
-    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
+    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction("Player::ActivateSpec");
     _SaveActions(trans);
     CharacterDatabase.CommitTransaction(trans);
 
@@ -27314,7 +27314,7 @@ void Player::RefundItem(Item* item)
     uint32 moneyRefund = item->GetPaidMoney();  // item-> will be invalidated in DestroyItem
 
     // Save all relevant data to DB to prevent desynchronisation exploits
-    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
+    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction("Player::RefundItem");
 
     // Delete any references to the refund data
     item->SetNotRefundable(this, true, &trans);
@@ -27358,7 +27358,7 @@ void Player::SendItemRetrievalMail(uint32 itemEntry, uint32 count)
 {
     MailSender sender(MAIL_CREATURE, 34337 /* The Postmaster */);
     MailDraft draft("Recovered Item", "We recovered a lost item in the twisting nether and noted that it was yours.$B$BPlease find said object enclosed."); // This is the text used in Cataclysm, it probably wasn't changed.
-    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
+    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction("Player::SendItemRetrievalMail");
 
     if (Item* item = Item::CreateItem(itemEntry, count, nullptr))
     {

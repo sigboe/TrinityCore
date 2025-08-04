@@ -199,7 +199,7 @@ void WorldSession::HandleGMSurveySubmit(WorldPacket& recvData)
     recvData >> mainSurvey;
 
     std::unordered_set<uint32> surveyIds;
-    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
+    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction("WorldSession::HandleGMSurveySubmit");
     // sub_survey1, r1, comment1, sub_survey2, r2, comment2, sub_survey3, r3, comment3, sub_survey4, r4, comment4, sub_survey5, r5, comment5, sub_survey6, r6, comment6, sub_survey7, r7, comment7, sub_survey8, r8, comment8, sub_survey9, r9, comment9, sub_survey10, r10, comment10,
     for (uint8 i = 0; i < 10; i++)
     {

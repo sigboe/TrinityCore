@@ -1680,7 +1680,7 @@ void Creature::SaveToDB(uint32 mapid, uint8 spawnMask, uint32 phaseMask)
         data.spawnGroupData = sObjectMgr->GetDefaultSpawnGroup();
 
     // update in DB
-    WorldDatabaseTransaction trans = WorldDatabase.BeginTransaction();
+    WorldDatabaseTransaction trans = WorldDatabase.BeginTransaction("Creature::SaveToDB");
 
     WorldDatabasePreparedStatement* stmt = WorldDatabase.GetPreparedStatement(WORLD_DEL_CREATURE);
     stmt->setUInt32(0, m_spawnId);
@@ -2133,7 +2133,7 @@ bool Creature::hasInvolvedQuest(uint32 quest_id) const
     if (!data)
         return false;
 
-    CharacterDatabaseTransaction charTrans = CharacterDatabase.BeginTransaction();
+    CharacterDatabaseTransaction charTrans = CharacterDatabase.BeginTransaction("Creature::DeleteFromDB");
 
     sMapMgr->DoForAllMapsWithMapId(data->mapId,
         [spawnId, charTrans](Map* map) -> void
@@ -2153,7 +2153,7 @@ bool Creature::hasInvolvedQuest(uint32 quest_id) const
 
     CharacterDatabase.CommitTransaction(charTrans);
 
-    WorldDatabaseTransaction trans = WorldDatabase.BeginTransaction();
+    WorldDatabaseTransaction trans = WorldDatabase.BeginTransaction("Creature::DeleteFromDB");
 
     // ... and the database
     WorldDatabasePreparedStatement* stmt = WorldDatabase.GetPreparedStatement(WORLD_DEL_CREATURE);

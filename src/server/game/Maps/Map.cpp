@@ -4798,7 +4798,7 @@ Corpse* Map::ConvertCorpseToBones(ObjectGuid const& ownerGuid, bool insignia /*=
     RemoveCorpse(corpse);
 
     // remove corpse from DB
-    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
+    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction("Map::ConvertCorpseToBones");
     corpse->DeleteFromDB(trans);
     CharacterDatabase.CommitTransaction(trans);
 

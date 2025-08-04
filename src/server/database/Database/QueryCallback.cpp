@@ -17,6 +17,7 @@
 
 #include "QueryCallback.h"
 #include "Errors.h"
+#include "AsyncLog.h"
 #include <chrono>
 #include <memory>
 #include <string>
@@ -110,49 +111,16 @@ private:
     bool _isPrepared;
 };
 
-std::mutex createAsyncLogDataMutex; 
-std::unordered_map<uint64, QueryCallbackLogData> logData;
-uint64 curLogDataEntry = 1;
-
-std::unordered_map<uint64, QueryCallbackLogData> GetAsyncLogData()
-{
-    std::scoped_lock lock(createAsyncLogDataMutex);
-    std::unordered_map<uint64, QueryCallbackLogData> logDataCopy = logData;
-    return logDataCopy;
-}
-
-static void RemoveLogDataEntry(uint64& entry)
-{
-    if (entry != 0)
-    {
-        entry = 0;
-        std::scoped_lock lock(createAsyncLogDataMutex);
-        logData.erase(entry);
-    }
-}
-
-uint64 createLogDataEntry(std::string query)
-{
-    std::scoped_lock lock(createAsyncLogDataMutex);
-    uint64 logDataEntry = curLogDataEntry++;
-    logData[logDataEntry] =
-        QueryCallbackLogData{query, static_cast<uint64>(std::chrono::duration_cast<std::chrono::milliseconds>(
-                                                            std::chrono::system_clock::now().time_since_epoch())
-                                                            .count())};
-    return logDataEntry;
-}
 
 // Not using initialization lists to work around segmentation faults when compiling with clang without precompiled headers
 QueryCallback::QueryCallback(std::future<QueryResult>&& result, std::string query)
 {
-    logEntryNo  = createLogDataEntry(query);
     _isPrepared = false;
     Construct(_string, std::move(result));
 }
 
 QueryCallback::QueryCallback(std::future<PreparedQueryResult>&& result, std::string query)
 {
-    logEntryNo  = createLogDataEntry(query);
     _isPrepared = true;
     Construct(_prepared, std::move(result));
 }
@@ -188,7 +156,6 @@ QueryCallback& QueryCallback::operator=(QueryCallback&& right)
 QueryCallback::~QueryCallback()
 {
     DestroyActiveMember(this);
-    RemoveLogDataEntry(logEntryNo);
 }
 
 QueryCallback&& QueryCallback::WithCallback(std::function<void(QueryResult)>&& callback)
@@ -248,7 +215,6 @@ bool QueryCallback::InvokeIfReady()
             QueryResultFuture f(std::move(_string));
             std::function<void(QueryCallback&, QueryResult)> cb(std::move(callback._string));
             cb(*this, f.get());
-            RemoveLogDataEntry(logEntryNo);
             return checkStateAndReturnCompletion();
         }
     }
@@ -259,7 +225,6 @@ bool QueryCallback::InvokeIfReady()
             PreparedQueryResultFuture f(std::move(_prepared));
             std::function<void(QueryCallback&, PreparedQueryResult)> cb(std::move(callback._prepared));
             cb(*this, f.get());
-            RemoveLogDataEntry(logEntryNo);
             return checkStateAndReturnCompletion();
         }
     }
