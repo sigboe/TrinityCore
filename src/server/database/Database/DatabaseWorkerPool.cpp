@@ -234,11 +234,12 @@ QueryCallback DatabaseWorkerPool<T>::AsyncQuery(char const* sql)
 template <class T>
 QueryCallback DatabaseWorkerPool<T>::AsyncQuery(PreparedStatement<T>* stmt)
 {
+    std::string name            = stmt ? stmt->GetName() : "unknown";
     PreparedStatementTask* task = new PreparedStatementTask(stmt, true);
     // Store future result before enqueueing - task might get already processed and deleted before returning from this method
     PreparedQueryResultFuture result = task->GetFuture();
     Enqueue(task);
-    return QueryCallback(std::move(result), stmt->GetName());
+    return QueryCallback(std::move(result), name);
 }
 
 template <class T>
@@ -339,7 +340,18 @@ void DatabaseWorkerPool<T>::DirectCommitTransaction(SQLTransaction<T>& transacti
 template <class T>
 PreparedStatement<T>* DatabaseWorkerPool<T>::GetPreparedStatement(PreparedStatementIndex index)
 {
-    return new PreparedStatement<T>(index, _preparedStatementSize[index], _preparedStatementNames[index]);
+    std::string name = [&]() -> std::string
+    {
+        if (index >= _preparedStatementNames.size())
+        {
+            return "unknown";
+        }
+        else
+        {
+            return _preparedStatementNames[index];
+        }
+    }();
+    return new PreparedStatement<T>(index, _preparedStatementSize[index], name);
 }
 
 template <class T>

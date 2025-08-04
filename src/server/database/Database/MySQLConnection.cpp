@@ -513,6 +513,7 @@ void MySQLConnection::PrepareStatement(uint32 index, std::string const& sql, Con
 
 PreparedResultSet* MySQLConnection::Query(PreparedStatementBase* stmt)
 {
+    std::string name                  = stmt ? stmt->GetName() : "unknown";
     MySQLPreparedStatement* mysqlStmt = nullptr;
     MySQLResult* result = nullptr;
     uint64 rowCount = 0;
@@ -525,7 +526,7 @@ PreparedResultSet* MySQLConnection::Query(PreparedStatementBase* stmt)
     {
         mysql_next_result(m_Mysql);
     }
-    return new PreparedResultSet(mysqlStmt->GetSTMT(), result, rowCount, fieldCount, stmt->GetName());
+    return new PreparedResultSet(mysqlStmt->GetSTMT(), result, rowCount, fieldCount, name);
 }
 
 bool MySQLConnection::_HandleMySQLErrno(uint32 errNo, uint8 attempts /*= 5*/, const char* sql /*= nullptr*/)

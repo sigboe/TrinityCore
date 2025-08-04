@@ -121,10 +121,11 @@ std::unordered_map<uint64, QueryCallbackLogData> GetAsyncLogData()
     return logDataCopy;
 }
 
-static void RemoveLogDataEntry(uint64 entry)
+static void RemoveLogDataEntry(uint64& entry)
 {
     if (entry != 0)
     {
+        entry = 0;
         std::scoped_lock lock(createAsyncLogDataMutex);
         logData.erase(entry);
     }
