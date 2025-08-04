@@ -10384,7 +10384,7 @@ void Unit::RemoveFromPartition()
     //    RemoveVehicleKit();
 
     //RemoveCharmAuras();
-    if (!IsVehicle())
+    if (!IsVehicle()) // Allow carts
         RemoveCharmAuras();
     RemoveBindSightAuras();
     RemoveNotOwnSingleTargetAuras();
@@ -10394,7 +10394,8 @@ void Unit::RemoveFromPartition()
 
     //ExitVehicle();  // Remove applied auras with SPELL_AURA_CONTROL_VEHICLE
     UnsummonAllTotems();
-    //RemoveAllControlled();
+    if (!IsVehicle()) // Allow carts
+        RemoveAllControlled();
     // unsummon any controlled temp summons
     for (auto itr = m_Controlled.begin(); itr != m_Controlled.end(); )
     {
@@ -10410,24 +10411,29 @@ void Unit::RemoveFromPartition()
         }
     }
 
-    //RemoveAreaAurasDueToLeaveWorld();
+    if (!IsVehicle()) // Allow carts
+        RemoveAreaAurasDueToLeaveWorld();
 
     RemoveAllFollowers();
 
-    //if (IsCharmed())
-    //    RemoveCharmedBy(nullptr);
+    if (!IsVehicle()) // Allow carts
+        if (IsCharmed())
+            RemoveCharmedBy(nullptr);
 
-    //ASSERT(!GetCharmedGUID(), "Unit %u has charmed guid when removed from world", GetEntry());
-    //ASSERT(!GetCharmerGUID(), "Unit %u has charmer guid when removed from world", GetEntry());
+    if (!IsVehicle()) // Allow carts
+    {
+        ASSERT(!GetCharmedGUID(), "Unit %u has charmed guid when removed from world", GetEntry());
+        ASSERT(!GetCharmerGUID(), "Unit %u has charmer guid when removed from world", GetEntry());
 
-    //if (Unit* owner = GetOwner())
-    //{
-    //    if (owner->m_Controlled.find(this) != owner->m_Controlled.end())
-    //    {
-    //        TC_LOG_FATAL("entities.unit", "Unit {} is in controlled list of {} when removed from world", GetEntry(), owner->GetEntry());
-    //        ABORT();
-    //    }
-    //}
+        if (Unit* owner = GetOwner())
+        {
+            if (owner->m_Controlled.find(this) != owner->m_Controlled.end())
+            {
+                TC_LOG_FATAL("entities.unit", "Unit {} is in controlled list of {} when removed from world", GetEntry(), owner->GetEntry());
+                ABORT();
+            }
+        }
+    }
 
     WorldObject::RemoveFromPartition();
 
